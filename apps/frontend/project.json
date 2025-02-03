@@ -7,7 +7,7 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "next dev",
+        "command": "next dev -p 4200",
         "cwd": "apps/frontend"
       }
     },
