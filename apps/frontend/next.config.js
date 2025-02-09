@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Vous pouvez changer le port ici si nécessaire
-  // server: {
-  //   port: 4200
-  // }
+  transpilePackages: ['three'],
+
   async rewrites() {
     return [
       {
@@ -12,6 +10,9 @@ const nextConfig = {
         destination: 'http://localhost:3000/api/:path*',
       },
     ];
+  },
+  images: {
+    domains: ['picsum.photos'],
   },
 };
 

@@ -8,7 +8,9 @@
       }
     ],
     "paths": {
-      "@notia/shared/*": ["../../libs/shared/src/*"]
+      "@notia/shared/*": [
+        "../../libs/shared/src/*"
+      ]
     },
     "resolveJsonModule": true
   },
@@ -17,7 +19,10 @@
     "**/*.tsx",
     "../../libs/shared/src/**/*",
     "next-env.d.ts",
+    "src/types/*.d.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
