@@ -1,0 +1,31 @@
+---
+description: Nest.js Backend app
+globs: 
+alwaysApply: false
+---
+
+
+## Tech Stack:
+
+- Backend: Node.js with Nest.js
+- Database: MongoDB with Mongoose ODM
+- Authentication: JSON Web Tokens (JWT), SIWE
+
+## Workflow setup
+
+- Use pnpm when adding dependencies
+- Be mindful if dependencies are for development and use the appropriate flags
+
+## Coding Standards
+
+- Use TypeScript for all new code
+- Use proper TypeScript types for all variables, functions and return types
+- Use barrel imports
+- Implement proper error handling and input validation
+- Always use relative imports
+
+## Best Practices
+
+- Ensure secure, efficient code following RESTful API best practices
+- Respect SOLID principles
+- Focus on performance and readability

@@ -1,440 +1,249 @@
 'use client';
-import { TimelineEvent } from '@notia/shared/interfaces/TimelineType';
-import { useRef, useEffect } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { parse } from 'date-fns';
-import type { NextPage } from 'next';
-import { TextureLoader } from 'three';
-import { Raycaster, Vector2, CatmullRomCurve3 } from 'three';
-import { CanvasTexture } from 'three';
-import { BackSide } from 'three';
+import { useRef, useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Box, Card, CardContent, CardMedia, Typography } from '@mui/material';
+import { historicEvents } from '../mock/timeline';
 
-// Ajout de la vérification de window
-declare global {
-  interface Window {
-    innerWidth: number;
-    innerHeight: number;
-  }
+// Définir l'interface localement pour l'instant
+interface TimelineEvent {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  wikipediaUrl: string;
 }
 
-const historicEvents: TimelineEvent[] = [
-  {
-    id: '1',
-    date: '14/07/1789',
-    title: 'Prise de la Bastille',
-    description:
-      "Événement emblématique de la Révolution française, marquant le début d'une nouvelle ère.",
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Prise_de_la_Bastille',
-  },
-  {
-    id: '10',
-    date: '14/07/1809',
-    title: 'Prise de la Bastille',
-    description:
-      "Événement emblématique de la Révolution française, marquant le début d'une nouvelle ère.",
+const getDateRange = (events: TimelineEvent[]) => {
+  const dates = events.map((e) => parse(e.date, 'dd/MM/yyyy', new Date()));
+  const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+  return { minDate, maxDate };
+};
 
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Prise_de_la_Bastille',
-  },
-  {
-    id: '2',
-    date: '02/12/1804',
-    title: 'Sacre de Napoléon',
-    description: 'Napoléon Bonaparte se couronne empereur des Français à Notre-Dame de Paris.',
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Sacre_de_Napol%C3%A9on_Ier',
-  },
-  {
-    id: '3',
-    date: '18/06/1940',
-    title: 'Appel du 18 juin',
-    description:
-      'Discours historique du Général de Gaulle appelant à la Résistance depuis Londres.',
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Appel_du_18_Juin',
-  },
-  {
-    id: '6',
-    date: '18/06/1940',
-    title: 'Appel du 18 juin',
-    description:
-      'Discours historique du Général de Gaulle appelant à la Résistance depuis Londres.',
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Appel_du_18_Juin',
-  },
-  {
-    id: '5',
-    date: '18/06/1940',
-    title: 'Appel du 18 juin',
-    description:
-      'Discours historique du Général de Benjamin appelant à la Résistance depuis Londres.',
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/Appel_du_18_Juin',
-  },
-  {
-    id: '4',
-    date: '08/05/1945',
-    title: 'Victoire des Alliés',
-    description:
-      "Fin de la Seconde Guerre mondiale en Europe, jour de la capitulation de l'Allemagne nazie.",
-    imageUrl: 'https://picsum.photos/600/400',
-    wikipediaUrl: 'https://fr.wikipedia.org/wiki/8_mai_1945',
-  },
-];
+const getEventPosition = (date: string, minDate: Date, maxDate: Date) => {
+  const eventDate = parse(date, 'dd/MM/yyyy', new Date());
+  const totalRange = maxDate.getTime() - minDate.getTime();
+  const eventPosition = eventDate.getTime() - minDate.getTime();
+  return (eventPosition / totalRange) * 100;
+};
 
-const TimelinePage: NextPage = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const TimelinePage = () => {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { minDate, maxDate } = getDateRange(historicEvents);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
 
+  const sortedEvents = [...historicEvents].sort((a, b) => {
+    const dateA = parse(a.date, 'dd/MM/yyyy', new Date());
+    const dateB = parse(b.date, 'dd/MM/yyyy', new Date());
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  // Calculer la largeur du conteneur au chargement
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (timelineRef.current) {
+      const width = timelineRef.current.clientWidth;
+      setContainerWidth(width);
 
-    const scene = new THREE.Scene();
-
-    // Créer un dégradé de fond
-    const skyGeometry = new THREE.SphereGeometry(50, 32, 32);
-    const uniforms = {
-      topColor: { value: new THREE.Color(0xffffff) }, // Blanc pur
-      bottomColor: { value: new THREE.Color(0xe0e0e0) }, // Gris très clair
-      offset: { value: 15 },
-      exponent: { value: 0.4 }, // Rendre le dégradé plus doux
-    };
-
-    const vertexShader = `
-      varying vec3 vWorldPosition;
-      void main() {
-        vec4 worldPosition = modelMatrix * vec4(position, .0);
-        vWorldPosition = worldPosition.xyz;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `;
-
-    const fragmentShader = `
-      uniform vec3 topColor;
-      uniform vec3 bottomColor;
-      uniform float offset;
-      uniform float exponent;
-      varying vec3 vWorldPosition;
-      void main() {
-        float h = normalize(vWorldPosition + offset).y;
-        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
-      }
-    `;
-
-    const skyMaterial = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      side: BackSide,
-    });
-
-    const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-    scene.add(sky);
-
-    // Camera setup with initial position at timeline start
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    // Positionner la caméra au début de la timeline
-    camera.position.set(-15, 3, 8);
-    camera.lookAt(-12, 0, 0); // Regarder le début de la timeline
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      antialias: true,
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Restricted controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-
-    // Désactiver le zoom
-    // controls.enableZoom = false;
-
-    // Limiter la rotation
-    // controls.minPolarAngle = Math.PI / 3; // 60 degrés
-    // controls.maxPolarAngle = Math.PI / 2.5; // ~72 degrés
-    // controls.minAzimuthAngle = -Math.PI / 6; // -30 degrés
-    // controls.maxAzimuthAngle = Math.PI / 6; // 30 degrés
-
-    // Désactiver le pan
-    controls.enablePan = false;
-
-    // Ajuster le point de pivot des contrôles
-    controls.target.set(-12, 0, 0);
-
-    // Timeline Line modification
-    const sortedEvents = [...historicEvents].sort((a, b) => {
-      const dateA = parse(a.date, 'dd/MM/yyyy', new Date());
-      const dateB = parse(b.date, 'dd/MM/yyyy', new Date());
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    const dates = sortedEvents.map((e) => parse(e.date, 'dd/MM/yyyy', new Date()));
-    const minDate = dates[0];
-    const maxDate = dates[dates.length - 1];
-    const timeRange = maxDate.getTime() - minDate.getTime();
-
-    // Timeline Curve creation - UNIQUEMENT cette partie pour la ligne
-    const points = [];
-    for (let i = 0; i <= 20; i++) {
-      const t = i / 20;
-      points.push(
-        new THREE.Vector3(
-          -12 + t * 24, // x: de -12 à 12
-          Math.sin(t * Math.PI * 2) * 0.15, // réduit de 0.3 à 0.15
-          Math.cos(t * Math.PI * 3) * 0.1 // réduit de 0.2 à 0.1
-        )
-      );
+      // Positionner initialement au début de la timeline avec le padding
+      setPosition(0);
     }
 
-    const curve = new CatmullRomCurve3(points);
-    const tubeGeometry = new THREE.TubeGeometry(
-      curve,
-      100, // segments tubulaires
-      0.05, // rayon
-      80, // segments radiaux
-      false // non fermé
-    );
-
-    const tubeMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2244ff,
-      metalness: 0.4,
-      roughness: 0.6,
-      emissive: 0x1133ff,
-      emissiveIntensity: 0.2,
-    });
-
-    const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-    scene.add(tube);
-
-    // Stocker les références des sphères et des cubes
-    const eventObjects: { sphere: THREE.Mesh; card?: THREE.Mesh; t: number }[] = [];
-
-    // Event markers and cards
-    sortedEvents.forEach((event) => {
-      const date = parse(event.date, 'dd/MM/yyyy', new Date());
-      const t = (date.getTime() - minDate.getTime()) / timeRange;
-
-      // Créer le marqueur (sphère)
-      const sphereGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-      const sphereMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        emissive: 0xffffff,
-        emissiveIntensity: 1,
-      });
-      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-      scene.add(sphere);
-
-      // Charger l'image pour la carte
-      const textureLoader = new TextureLoader();
-      textureLoader.load(event.imageUrl, (texture) => {
-        // Créer un canvas pour combiner image et texte
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 1024;
-        canvas.height = 1024;
-
-        if (ctx) {
-          // Améliorer la qualité du texte
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-
-          // Fond noir semi-transparent
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Ajouter l'image
-          const aspectRatio = texture.image.width / texture.image.height;
-          const imageHeight = canvas.height * 0.6;
-          const imageWidth = imageHeight * aspectRatio;
-          ctx.drawImage(texture.image, (canvas.width - imageWidth) / 2, 0, imageWidth, imageHeight);
-
-          // Ajouter le texte
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 64px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(event.title, canvas.width / 2, imageHeight + 100);
-
-          ctx.font = '48px Arial';
-          ctx.fillText(event.date, canvas.width / 2, imageHeight + 180);
-        }
-
-        // Créer la texture à partir du canvas
-        const cardTexture = new CanvasTexture(canvas);
-
-        // Créer la carte
-        const cardGeometry = new THREE.PlaneGeometry(1.2, 1.2);
-        const cardMaterial = new THREE.MeshBasicMaterial({
-          map: cardTexture,
-          transparent: true,
-          side: THREE.DoubleSide,
-        });
-        const card = new THREE.Mesh(cardGeometry, cardMaterial);
-        scene.add(card);
-
-        // Ajouter la carte aux objets à animer
-        const eventObject = eventObjects.find((obj) => obj.sphere === sphere);
-        if (eventObject) {
-          eventObject.card = card;
-        }
-
-        cubeLinks.set(card, event.wikipediaUrl);
-      });
-
-      // Stocker la référence
-      eventObjects.push({ sphere, t });
-    });
-
-    // Keyboard controls for timeline navigation
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const speed = 0.5;
-      switch (event.key) {
-        case 'ArrowRight':
-          if (camera.position.x < 12) {
-            camera.position.x += speed;
-            controls.target.x += speed;
-          }
-          break;
-        case 'ArrowLeft':
-          if (camera.position.x > -15) {
-            // Limite gauche ajustée
-            camera.position.x -= speed;
-            controls.target.x -= speed;
-          }
-          break;
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-
-    // Raycaster setup
-    const raycaster = new Raycaster();
-    const mouse = new Vector2();
-    const cubeLinks = new Map(); // Pour stocker les associations cube -> lien
-
-    // Click handler
-    const handleClick = (event: MouseEvent) => {
-      if (!canvasRef.current) return;
-
-      // Calculer la position de la souris en coordonnées normalisées (-1 à +1)
-      const rect = canvasRef.current.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      // Mettre à jour le raycaster
-      raycaster.setFromCamera(mouse, camera);
-
-      // Vérifier les intersections
-      const intersects = raycaster.intersectObjects(scene.children);
-      if (intersects.length > 0) {
-        const clickedCube = intersects[0].object;
-        const link = cubeLinks.get(clickedCube);
-        if (link && typeof window !== 'undefined') {
-          window.open(link, '_blank');
-        }
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      canvasRef.current.addEventListener('click', handleClick);
-    }
-
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Augmenter l'intensité
-    scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 1.0);
-    pointLight.position.set(10, 10, 10);
-    scene.add(pointLight);
-
-    // Animation
-    function animate() {
-      requestAnimationFrame(animate);
-
-      // Animer la courbe
-      const time = Date.now() * 0.001;
-      points.forEach((point, i) => {
-        const t = i / 20;
-        point.y = Math.sin(t * Math.PI * 2 + time * 0.5) * 0.15;
-        point.z = Math.cos(t * Math.PI * 3 + time * 0.5) * 0.1;
-      });
-
-      // Mettre à jour la géométrie du tube
-      curve.points = points;
-      tube.geometry = new THREE.TubeGeometry(curve, 100, 0.05, 80, false);
-
-      // Mettre à jour la position des sphères et des cartes
-      eventObjects.forEach(({ sphere, card, t }, index) => {
-        const point = curve.getPoint(t);
-        sphere.position.copy(point);
-
-        if (card) {
-          card.position.copy(point);
-
-          // Calculer un décalage vertical basé sur l'index
-          const sameDateEvents = eventObjects.filter(
-            (obj) => Math.abs(obj.t - t) < 0.01 // Événements proches sur la timeline
-          );
-          const indexInGroup = sameDateEvents.findIndex((obj) => obj.sphere === sphere);
-
-          // Alterner les cartes en hauteur
-          const baseHeight = 1.0; // Hauteur de base réduite
-          const heightOffset = indexInGroup * 0.8; // Décalage entre les cartes
-          card.position.y += baseHeight + heightOffset;
-
-          // Décaler légèrement en profondeur pour éviter les z-fighting
-          card.position.z += indexInGroup * 0.1;
-
-          // Orienter la carte vers la caméra
-          card.lookAt(camera.position);
-        }
-      });
-
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    animate();
-
-    // Resize handler
+    // Recalculer si la fenêtre est redimensionnée
     const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-    window.addEventListener('resize', handleResize);
-
-    // Update cleanup
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('keydown', handleKeyDown);
-        canvasRef.current?.removeEventListener('click', handleClick);
+      if (timelineRef.current) {
+        const width = timelineRef.current.clientWidth;
+        setContainerWidth(width);
       }
-      cubeLinks.clear();
-      window.removeEventListener('resize', handleResize);
-      renderer.dispose();
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
-      });
     };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Limites de déplacement ajustées avec padding
+  const paddingVw = 10; // 10vw de padding
+  const paddingPx = (window.innerWidth * paddingVw) / 100; // Conversion en pixels
+  const minPosition = -(containerWidth - paddingPx); // Limite gauche avec padding
+  const maxPosition = 0; // Limite droite (début de la timeline)
+
+  // Gestion du zoom avec la molette
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setScale((prev) => Math.max(0.5, Math.min(prev + delta, 5)));
+    }
+  };
+
+  // Gestion du glisser-déposer
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.clientX - position);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      const newPosition = e.clientX - startX;
+      // Limiter le déplacement
+      setPosition(Math.min(Math.max(newPosition, minPosition), maxPosition));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Modifier également la fonction handleGlobalMouseMove
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const newPosition = e.clientX - startX;
+        // Limiter le déplacement
+        setPosition(Math.min(Math.max(newPosition, minPosition), maxPosition));
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+    };
+  }, [isDragging, startX, minPosition, maxPosition]);
+
   return (
-    <>
-      <canvas ref={canvasRef} className="w-full h-full" style={{ cursor: 'pointer' }} />
-    </>
+    <Box
+      sx={{
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%)',
+      }}
+      onWheel={handleWheel}
+    >
+      <Box
+        ref={timelineRef}
+        sx={{
+          position: 'relative',
+          height: '100%',
+          width: '200vw',
+          overflow: 'hidden',
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '5%',
+            width: '180vw',
+            height: '10px',
+            backgroundColor: 'black',
+            transform: `translateX(${position}px) scale(${scale}, 1) translateY(-50%)`,
+            transformOrigin: 'left center',
+          }}
+        >
+          {sortedEvents.map((event) => {
+            const positionPercent = getEventPosition(event.date, minDate, maxDate);
+
+            return (
+              <Box
+                key={event.id}
+                sx={{
+                  position: 'absolute',
+                  left: `${positionPercent}%`,
+                  transform: 'translate(-50%, -50%)',
+                  top: '50%',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '4px',
+                    bgcolor: 'white',
+                    cursor: 'pointer',
+                    border: '5px solid grey',
+                    transition: 'transform 0.2s',
+                  }}
+                />
+
+                <Card
+                  sx={{
+                    position: 'absolute',
+                    top: 32,
+                    left: -70,
+                    width: 140,
+                    opacity: 1,
+                    transform: 'scale(1)',
+                    transition: 'all 0.3s ease-in-out',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+                      zIndex: 1,
+                      '& .description-text': {
+                        maxHeight: '300px',
+                        WebkitLineClamp: 'unset',
+                      },
+                    },
+                  }}
+                  elevation={8}
+                >
+                  <CardMedia component="div" sx={{ position: 'relative', height: 120 }}>
+                    <Image
+                      src={event.imageUrl}
+                      alt={event.title}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                      priority
+                    />
+                  </CardMedia>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      {event.title}
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {event.date}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      className="description-text"
+                      sx={{
+                        mt: 1,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        transition: 'all 0.4s ease-in-out',
+                        maxHeight: '4.5em',
+                      }}
+                    >
+                      {event.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

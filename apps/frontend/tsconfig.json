@@ -8,9 +8,7 @@
       }
     ],
     "paths": {
-      "@notia/shared/*": [
-        "../../libs/shared/src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "resolveJsonModule": true
   },
@@ -26,3 +24,4 @@
     "node_modules"
   ]
 }
+  
