@@ -1,6 +1,5 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
-import * as THREE from 'three';
 
 declare global {
   namespace JSX {

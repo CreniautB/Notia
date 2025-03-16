@@ -2,15 +2,27 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "preserve",
+    "allowJs": true,
+    "moduleResolution": "bundler",
+    "noImplicitReturns": false,
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@notia/shared": [
+        "../../libs/shared/src"
+      ],
+      "@notia/shared/*": [
+        "../../libs/shared/src/*"
+      ]
     },
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "module": "esnext"
   },
   "include": [
     "**/*.ts",
@@ -24,4 +36,3 @@
     "node_modules"
   ]
 }
-  

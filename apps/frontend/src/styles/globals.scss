@@ -20,7 +20,6 @@ html,
 body {
   height: 100%;
   width: 100%;
-  overflow: hidden;
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -30,7 +29,7 @@ body {
 }
 
 body {
-  background-color: var(--background-color);
+  // background-color: var(--background-color);
   color: var(--text-color);
 }
 
