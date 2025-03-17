@@ -17,7 +17,7 @@ import { MediaModule } from './media/media.module';
       useFactory: async (configService: ConfigService) => ({
         uri:
           configService.get<string>('MONGODB_URI') ||
-          'mongodb://localhost:27017/notia',
+          'mongodb://127.0.0.1:27017/notia-quiz',
       }),
       inject: [ConfigService],
     }),
