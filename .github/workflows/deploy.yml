@@ -29,7 +29,7 @@ jobs:
               echo "Directory does not exist, creating..."
               mkdir -p /home/notia/Notia
               cd /home/notia/Notia
-              git clone https://github.com/votre-username/notia.git .
+              git clone https://github.com/CreniautB/notia.git .
             else
               echo "Directory exists, proceeding with update..."
               cd /home/notia/Notia
