@@ -22,9 +22,43 @@ jobs:
           script_stop: true
           debug: true
           script: |
-            cd /home/notia/Notia
-            git pull origin master
-            npm install
-            npx nx run-many --target=build --projects=frontend,backend --skip-nx-cache --skipTests=true
-            pm2 restart notia-frontend notia-backend
+            echo "=== Starting deployment process ==="
+
+            # Vérifier le répertoire
+            if [ ! -d "/home/notia/Notia" ]; then
+              echo "Directory does not exist, creating..."
+              mkdir -p /home/notia/Notia
+              cd /home/notia/Notia
+              git clone https://github.com/votre-username/notia.git .
+            else
+              echo "Directory exists, proceeding with update..."
+              cd /home/notia/Notia
+            fi
+
+            # Afficher la branche actuelle et le dernier commit
+            echo "=== Current branch and commit ==="
+            git branch
+            git log -1
+
+            # Pull des changements
+            echo "=== Pulling latest changes ==="
+            git pull origin master || { echo "Git pull failed"; exit 1; }
+
+            # Installer les dépendances
+            echo "=== Installing dependencies ==="
+            npm install || { echo "npm install failed"; exit 1; }
+
+            # Build
+            echo "=== Building projects ==="
+            npx nx run-many --target=build --projects=frontend,backend --skip-nx-cache --skipTests=true || { echo "Build failed"; exit 1; }
+
+            # Vérifier les processus PM2
+            echo "=== Current PM2 processes ==="
+            pm2 list
+
+            # Redémarrer les services
+            echo "=== Restarting services ==="
+            pm2 restart notia-frontend notia-backend || { echo "PM2 restart failed"; exit 1; }
             pm2 save
+
+            echo "=== Deployment complete ==="
