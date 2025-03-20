@@ -22,6 +22,6 @@ jobs:
             cd /home/notia/Notia
             git pull origin master
             npm install
-            npm run build:all
+            npx nx run-many --target=build --projects=frontend,backend --skip-nx-cache --skipTests=true
             pm2 restart notia-frontend notia-backend
             pm2 save

@@ -1,4 +1,5 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
+import { fontConfig } from './fonts';
 
 // Palette de couleurs
 const secondaryColor = '#f50057';
@@ -48,22 +49,26 @@ let theme = createTheme({
     },
   },
   typography: {
-    fontFamily: ['Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'].join(','),
+    fontFamily: fontConfig.bodyFontFamily,
     h1: {
       fontSize: '2.5rem',
       fontWeight: 500,
+      fontFamily: fontConfig.titleFontFamily,
     },
     h2: {
       fontSize: '2rem',
       fontWeight: 500,
+      fontFamily: fontConfig.bodyFontFamily,
     },
     h3: {
       fontSize: '1.75rem',
       fontWeight: 500,
+      fontFamily: fontConfig.bodyFontFamily,
     },
     h4: {
       fontSize: '1.5rem',
       fontWeight: 500,
+      fontFamily: fontConfig.bodyFontFamily,
     },
     h5: {
       fontSize: '1.25rem',

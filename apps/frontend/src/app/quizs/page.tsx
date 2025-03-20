@@ -2,6 +2,7 @@ import { Container, Typography, Box } from '@mui/material';
 import { QuizTheme, QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
 import { QuizCard } from './QuizCard';
 import type { Metadata } from 'next';
+import { serverApi } from '../../utils/server-api';
 
 interface QuizAvailability {
   count: number;
@@ -13,29 +14,26 @@ interface QuizAvailability {
 
 async function getAvailableQuizzes(): Promise<QuizAvailability[]> {
   try {
-    const response = await fetch('http://localhost:3001/api/quiz/available', {
-      next: { revalidate: 0 },
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    // Utilisation de l'API avec destructuration des données et erreurs
+    const { data, error } = await serverApi.get<QuizAvailability[]>('/quiz/available', {}, 0);
 
-    if (!response.ok) {
-      console.error(`Erreur API: ${response.status} - ${await response.text()}`);
-      throw new Error(`Erreur lors de la récupération des quiz disponibles: ${response.status}`);
+    // Gestion des erreurs
+    if (error) {
+      console.error('Erreur API:', error);
+      return [];
     }
 
-    const apiResponse = (await response.json()) as QuizAvailability[];
-
-    if (!Array.isArray(apiResponse)) {
-      console.error('Format de réponse API invalide:', apiResponse);
-      throw new Error('Format de réponse API invalide');
+    // Validation des données
+    if (!data || !Array.isArray(data)) {
+      console.error('Format de réponse API invalide:', data);
+      return [];
     }
 
     // Ne retourner que les quiz qui ont au moins 10 questions
-    return apiResponse.filter((quiz) => quiz.count >= 10);
-  } catch (error) {
-    console.error('Erreur lors de la récupération des quiz disponibles:', error);
+    return data.filter((quiz) => quiz.count >= 10);
+  } catch (e) {
+    // Capture toute erreur non gérée
+    console.error('Erreur inattendue lors de la récupération des quiz:', e);
     return [];
   }
 }
