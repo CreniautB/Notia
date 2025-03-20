@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { QuizPlayerWrapper } from './QuizPlayerWrapper';
 import type { Metadata } from 'next';
 import type { Quiz } from './types';
+import { serverApi } from '../../utils/server-api';
 
 // Helper functions for theme and difficulty labels/colors
 const getThemeColor = (theme: QuizTheme): string => {
@@ -54,28 +55,37 @@ const getDifficultyColor = (
 };
 
 async function getRandomQuiz(theme: QuizTheme, difficulty: QuizDifficulty): Promise<Quiz> {
+  console.log(
+    `Tentative de récupération d'un quiz aléatoire: theme=${theme}, difficulty=${difficulty}`
+  );
+
   try {
-    const apiUrl = `http://localhost:3001/api/quiz/random?theme=${theme}&difficulty=${difficulty}`;
-    console.log(`Tentative de connexion à l'API: ${apiUrl}`);
-
-    const response = await fetch(apiUrl, {
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(5000),
-      headers: {
-        Accept: 'application/json',
+    // Utilisation de serverApi au lieu de fetch direct
+    const { data, error } = await serverApi.get<Quiz>(
+      `/quiz/random?theme=${theme}&difficulty=${difficulty}`,
+      {
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(5000),
       },
-    });
+      0
+    );
 
-    if (!response.ok) {
-      console.error(`Erreur API: ${response.status} - ${await response.text()}`);
-      if (response.status === 404) {
+    // Gestion des erreurs
+    if (error) {
+      console.error('Erreur API:', error);
+      if (error.code === '404') {
         notFound();
       }
-      throw new Error(`Erreur lors de la récupération du quiz: ${response.status}`);
+      throw new Error(`Erreur lors de la récupération du quiz: ${error.message}`);
     }
 
-    const data = await response.json();
-    return data as Quiz;
+    // Validation des données
+    if (!data) {
+      console.error("Aucune donnée retournée par l'API");
+      throw new Error('Le quiz demandé est introuvable');
+    }
+
+    return data;
   } catch (error) {
     console.error('Erreur lors de la récupération du quiz:', error);
     throw error;

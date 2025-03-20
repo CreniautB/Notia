@@ -62,18 +62,6 @@ export function QuizCard({ theme, difficulty, questionCount }: QuizCardProps) {
         }}
       >
         <CardContent>
-          <Box
-            sx={{
-              height: 8,
-              backgroundColor: difficultyColors[difficulty],
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              borderTopLeftRadius: 'inherit',
-              borderTopRightRadius: 'inherit',
-            }}
-          />
           <Typography
             gutterBottom
             variant="h6"
