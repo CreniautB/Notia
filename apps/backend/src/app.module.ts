@@ -12,7 +12,6 @@ import { DatabaseModule } from './database/database.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DatabaseModule,
     QuizModule,
     SharedModule,
     MediaModule,
