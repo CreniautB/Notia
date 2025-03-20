@@ -19,7 +19,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
-          script_stop: true
           debug: true
           script: |
             echo "=== Starting deployment process ==="
@@ -50,7 +49,7 @@ jobs:
 
             # Build
             echo "=== Building projects ==="
-            npx nx run-many --target=build --projects=frontend,backend --skip-nx-cache --skipTests=true || { echo "Build failed"; exit 1; }
+            npx nx run-many --target=build --projects=frontend,backend || { echo "Build failed"; exit 1; }
 
             # Vérifier les processus PM2
             echo "=== Current PM2 processes ==="
