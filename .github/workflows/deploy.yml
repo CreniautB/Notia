@@ -81,15 +81,66 @@ jobs:
             # Extraire l'URI de MongoDB du fichier .env
             MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
 
-            # Tester la connexion à MongoDB
+            # Afficher l'URI (en masquant les informations sensibles)
+            MASKED_URI=$(echo "$MONGO_URI" | sed 's/\/\/.*@/\/\/****:****@/')
+            echo "URI MongoDB: $MASKED_URI"
+
+            # Vérifier si l'URI est valide et contient tous les éléments nécessaires
+            if [[ ! "$MONGO_URI" =~ ^mongodb(\+srv)?:\/\/ ]]; then
+              echo "❌ Erreur: Format de l'URI MongoDB invalide"
+              echo "L'URI doit commencer par mongodb:// ou mongodb+srv://"
+              exit 1
+            fi
+
+            # Tester la connexion à MongoDB avec plus de détails
             echo "Tentative de connexion à MongoDB..."
-            if mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" > /dev/null; then
+            if mongosh "$MONGO_URI" --eval "try { db.adminCommand('ping'); print('Databases:'); db.getMongo().getDBNames().forEach(db => print(' - ' + db)); } catch(e) { print('Error: ' + e); quit(1); }" > mongo_test_output.txt 2>&1; then
               echo "✅ Connexion à MongoDB réussie !"
+              cat mongo_test_output.txt
             else
               echo "❌ Erreur: Impossible de se connecter à MongoDB"
+              echo "Détails de l'erreur:"
+              cat mongo_test_output.txt
               echo "Vérifiez l'URI de connexion et assurez-vous que MongoDB est accessible."
               exit 1
             fi
+
+            # Vérifier si la base de données "notia" existe, sinon la créer avec des données de test
+            echo "Vérification de la base de données notia..."
+            if ! grep -q "notia" mongo_test_output.txt; then
+              echo "⚠️ La base de données 'notia' n'existe pas encore, initialisation avec des données de test..."
+              mongosh "$MONGO_URI" --eval '
+                use notia;
+                // Créer une collection quiz avec quelques entrées de test
+                db.quizzes.insertMany([
+                  {
+                    title: "Quiz de démarrage",
+                    description: "Quiz de test pour vérifier que tout fonctionne",
+                    theme: "science",
+                    difficulty: "easy",
+                    questions: [
+                      {
+                        type: "multiple_choice",
+                        content: "Quelle est la capitale de la France?",
+                        options: [
+                          { content: "Berlin", isCorrect: false },
+                          { content: "Paris", isCorrect: true },
+                          { content: "Rome", isCorrect: false },
+                          { content: "Madrid", isCorrect: false }
+                        ],
+                        points: 10
+                      }
+                    ],
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                  }
+                ]);
+                print("Base de données initialisée avec succès!");
+              ' || { echo "Erreur lors de l'initialisation de la base de données"; exit 1; }
+            fi
+
+            # Nettoyage du fichier temporaire
+            rm mongo_test_output.txt
 
             # Build
             echo "=== Building projects ==="
