@@ -73,6 +73,14 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             EOL
 
+            # Vérifier que NEXT_PUBLIC_API_URL n'est pas vide
+            if [ -z "$(grep -oP '(?<=NEXT_PUBLIC_API_URL=).*' apps/frontend/.env.local)" ]; then
+              echo "❌ Erreur: NEXT_PUBLIC_API_URL est vide dans le fichier .env.local du frontend"
+              echo "Veuillez configurer le secret NEXT_PUBLIC_API_URL dans les paramètres GitHub Actions."
+              echo "Ce secret doit contenir l'URL complète de l'API, par exemple: https://notia-api.example.com"
+              exit 1
+            fi
+
             # Vérifier la connexion à MongoDB avant de continuer
             echo "=== Vérification de la connexion à MongoDB ==="
             # Installer mongodb-clients si nécessaire
