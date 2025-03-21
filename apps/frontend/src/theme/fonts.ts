@@ -1,12 +1,23 @@
-import { Rampart_One, Roboto } from 'next/font/google';
+import { Rampart_One, Roboto, Mogra } from 'next/font/google';
 
-// Police pour les titres principaux
-export const rampartOne = Rampart_One({
-  weight: '400', // La police Rampart One n'a généralement qu'un seul poids
+// Police pour les titres principaux (ancienne version)
+// export const rampartOne = Rampart_One({
+//   weight: '400', // La police Rampart One n'a généralement qu'un seul poids
+//   subsets: ['latin'],
+//   display: 'swap',
+//   variable: '--font-rampart-one',
+// });
+
+// Nouvelle police pour les titres
+export const mogra = Mogra({
+  weight: '400',
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-rampart-one',
+  variable: '--font-mogra',
 });
+
+// Pour maintenir la compatibilité avec les composants existants
+export const rampartOne = mogra;
 
 // Police principale pour le contenu
 export const roboto = Roboto({
@@ -21,6 +32,6 @@ export const roboto = Roboto({
 
 // Configuration des familles de polices pour Material UI
 export const fontConfig = {
-  titleFontFamily: `${rampartOne.style.fontFamily}, "Helvetica Neue", Arial, sans-serif`,
+  titleFontFamily: `${mogra.style.fontFamily}, "Helvetica Neue", Arial, sans-serif`,
   bodyFontFamily: `${roboto.style.fontFamily}, "Helvetica Neue", Arial, sans-serif`,
 };

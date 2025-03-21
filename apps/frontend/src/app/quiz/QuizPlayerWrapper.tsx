@@ -5,13 +5,13 @@ import {
   Box,
   Button,
   Typography,
-  Stack,
   Radio,
   RadioGroup,
   FormControlLabel,
   FormControl,
   useTheme,
   alpha,
+  Grid,
 } from '@mui/material';
 import type { Quiz } from './types';
 
@@ -48,6 +48,7 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [selectedAnswer, currentQuestion, currentQuestionIndex, quiz.questions.length]);
 
   const handleAnswerSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,16 +87,16 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
 
   return (
     <Box sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="smallBold" gutterBottom>
         Question {currentQuestionIndex + 1} sur {quiz.questions.length}
       </Typography>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h4" gutterBottom>
         {currentQuestion.content}
       </Typography>
       {currentQuestion.type === 'multiple_choice' && (
         <FormControl component="fieldset" sx={{ width: '100%', mt: 2 }}>
           <RadioGroup value={selectedAnswer || ''} onChange={handleAnswerSelect}>
-            <Stack spacing={2}>
+            <Grid container spacing={2}>
               {currentQuestion.options.map((option) => {
                 const isSelected = selectedAnswer === option.content;
                 const isCorrect = option.isCorrect;
@@ -104,46 +105,46 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
                 let backgroundColor = 'transparent';
                 if (showFeedback) {
                   if (isCorrect) {
-                    backgroundColor = alpha(theme.palette.success.main, 0.1);
+                    backgroundColor = alpha(theme.palette.success.main, 0.5);
                   } else if (isSelected) {
-                    backgroundColor = alpha(theme.palette.error.main, 0.1);
-                  }
-                }
-
-                let borderColor = 'divider';
-                if (showFeedback) {
-                  if (isCorrect) {
-                    borderColor = theme.palette.success.main;
-                  } else if (isSelected) {
-                    borderColor = theme.palette.error.main;
+                    backgroundColor = alpha(theme.palette.error.main, 0.5);
+                  } else {
+                    backgroundColor = alpha(theme.palette.primary.main, 0.04);
                   }
                 }
 
                 return (
-                  <FormControlLabel
-                    key={option._id}
-                    value={option.content}
-                    control={<Radio />}
-                    label={option.content}
-                    sx={{
-                      border: '1px solid',
-                      borderColor,
-                      borderRadius: 1,
-                      p: 1,
-                      width: '100%',
-                      m: 0,
-                      backgroundColor,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
+                  <Grid item xs={12} sm={6} key={option._id}>
+                    <FormControlLabel
+                      value={option.content}
+                      control={<Radio />}
+                      label={option.content}
+                      sx={{
+                        borderRadius: 1,
+                        p: 2,
+                        width: '100%',
+                        m: 'auto',
+                        transition: 'all 0.2s ease-in-out',
                         backgroundColor: showFeedback
                           ? backgroundColor
                           : alpha(theme.palette.primary.main, 0.04),
-                      },
-                    }}
-                  />
+                        '&:hover': {
+                          backgroundColor: showFeedback
+                            ? backgroundColor
+                            : alpha(theme.palette.primary.main, 0.08),
+                        },
+                        '& .MuiFormControlLabel-label': {
+                          textAlign: 'center',
+                          width: '100%',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                        },
+                      }}
+                    />
+                  </Grid>
                 );
               })}
-            </Stack>
+            </Grid>
           </RadioGroup>
         </FormControl>
       )}
