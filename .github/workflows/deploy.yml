@@ -73,6 +73,24 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             EOL
 
+            # Vérifier la connexion à MongoDB avant de continuer
+            echo "=== Vérification de la connexion à MongoDB ==="
+            # Installer mongodb-clients si nécessaire
+            which mongosh > /dev/null || sudo apt-get update && sudo apt-get install -y mongodb-clients
+
+            # Extraire l'URI de MongoDB du fichier .env
+            MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
+
+            # Tester la connexion à MongoDB
+            echo "Tentative de connexion à MongoDB..."
+            if mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" > /dev/null; then
+              echo "✅ Connexion à MongoDB réussie !"
+            else
+              echo "❌ Erreur: Impossible de se connecter à MongoDB"
+              echo "Vérifiez l'URI de connexion et assurez-vous que MongoDB est accessible."
+              exit 1
+            fi
+
             # Build
             echo "=== Building projects ==="
             npx nx run-many --target=build --projects=frontend,backend || { echo "Build failed"; exit 1; }
