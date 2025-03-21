@@ -47,6 +47,32 @@ jobs:
             echo "=== Installing dependencies ==="
             npm install || { echo "npm install failed"; exit 1; }
 
+            # Créer le fichier .env pour le backend
+            echo "=== Création du fichier .env pour le backend ==="
+            cat > apps/backend/.env << 'EOL'
+            # Configuration de la base de données
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+
+            # Options avancées pour MongoDB
+            MONGODB_RETRY_ATTEMPTS=3
+            MONGODB_RETRY_DELAY=1000
+            MONGODB_CONNECTION_TIMEOUT=10000
+
+            # Port de l'application
+            PORT=3001
+
+            # Autres variables d'environnement
+            NODE_ENV=production
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            EOL
+
+            # Créer le fichier .env pour le frontend
+            echo "=== Création du fichier .env pour le frontend ==="
+            cat > apps/frontend/.env.local << 'EOL'
+            # URL de l'API backend
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            EOL
+
             # Build
             echo "=== Building projects ==="
             npx nx run-many --target=build --projects=frontend,backend || { echo "Build failed"; exit 1; }
