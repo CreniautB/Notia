@@ -1,4 +1,4 @@
-import { Rampart_One, Roboto, Mogra } from 'next/font/google';
+import { Roboto, Mogra } from 'next/font/google';
 
 // Police pour les titres principaux (ancienne version)
 // export const rampartOne = Rampart_One({

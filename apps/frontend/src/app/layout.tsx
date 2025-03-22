@@ -1,7 +1,6 @@
 import '../styles/globals.scss';
 import { Providers } from './providers';
 import { rampartOne, roboto } from '../theme/fonts';
-import { Container, Paper } from '@mui/material';
 import { ContentCard } from '../components/ContentCard';
 
 export default function RootLayout({
