@@ -2,6 +2,7 @@ import { Container, Typography, Paper, Box, Chip } from '@mui/material';
 import { QuizTheme, QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
 import { notFound, redirect } from 'next/navigation';
 import { QuizPlayerWrapper } from './QuizPlayerWrapper';
+import { ContentCard } from '../../components/ContentCard';
 import type { Metadata } from 'next';
 import type { Quiz } from './types';
 import { serverApi } from '../../utils/server-api';
@@ -112,33 +113,50 @@ export default async function QuizPage(props: {
     const quiz = await getRandomQuiz(theme, difficulty);
 
     return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Paper sx={{ p: 4, borderRadius: 1, mb: 3 }}>
-          <Typography variant="h4" align="center">
-            {quiz.title}
-          </Typography>
-          <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            {quiz.description}
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-            <Chip
-              label={getThemeLabel(quiz.theme)}
-              size="small"
-              sx={{
-                bgcolor: getThemeColor(quiz.theme),
-                color: 'white',
-                mr: 1,
-              }}
-            />
-            <Chip
-              label={getDifficultyLabel(quiz.difficulty)}
-              size="small"
-              color={getDifficultyColor(quiz.difficulty)}
-            />
-          </Box>
+      <>
+        <ContentCard paperProps={{ sx: { p: 3, borderRadius: 3 } }}>
           <QuizPlayerWrapper quiz={quiz} />
-        </Paper>
-      </Container>
+        </ContentCard>
+        <ContentCard>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            <Box>
+              <Typography variant="h4" align="left">
+                {quiz.title}
+              </Typography>
+              <Typography variant="h5" color="text.secondary">
+                {quiz.description}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+              <Chip
+                label={getThemeLabel(quiz.theme)}
+                size="medium"
+                sx={{
+                  bgcolor: getThemeColor(quiz.theme),
+                  color: 'white',
+                  p: 3,
+                  borderRadius: 3,
+                }}
+              />
+              <Chip
+                label={getDifficultyLabel(quiz.difficulty)}
+                size="medium"
+                color={getDifficultyColor(quiz.difficulty)}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                }}
+              />
+            </Box>
+          </Box>
+        </ContentCard>
+      </>
     );
   } catch (err) {
     console.error('Erreur lors du chargement du quiz:', err);

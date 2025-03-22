@@ -1,6 +1,8 @@
 import '../styles/globals.scss';
 import { Providers } from './providers';
 import { rampartOne, roboto } from '../theme/fonts';
+import { Container, Paper } from '@mui/material';
+import { ContentCard } from '../components/ContentCard';
 
 export default function RootLayout({
   children,
@@ -12,7 +14,9 @@ export default function RootLayout({
       <body className={roboto.className}>
         <Providers>
           <header>
-            <h1 className="main-title">NOTIA</h1>
+            <ContentCard>
+              <h1 className="main-title">NOTIA</h1>
+            </ContentCard>
           </header>
           {children}
         </Providers>

@@ -1,6 +1,25 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 import { fontConfig } from './fonts';
 
+// Déclaration des modules pour le thème personnalisé
+declare module '@mui/material/styles' {
+  interface TypographyVariants {
+    smallBold: React.CSSProperties;
+  }
+
+  // Permettre la configuration via createTheme()
+  interface TypographyVariantsOptions {
+    smallBold?: React.CSSProperties;
+  }
+}
+
+// Mettre à jour les options de variante prop Typography
+declare module '@mui/material/Typography' {
+  interface TypographyPropsVariantOverrides {
+    smallBold: true;
+  }
+}
+
 // Palette de couleurs
 const secondaryColor = '#f50057';
 const successColor = '#4caf50';
@@ -66,20 +85,32 @@ let theme = createTheme({
       fontFamily: fontConfig.bodyFontFamily,
     },
     h4: {
-      fontSize: '1.5rem',
+      fontSize: '1.2rem',
       fontWeight: 500,
       fontFamily: fontConfig.bodyFontFamily,
     },
     h5: {
-      fontSize: '1.25rem',
+      fontSize: '1rem',
       fontWeight: 500,
     },
     h6: {
       fontSize: '1rem',
       fontWeight: 500,
     },
+    smallBold: {
+      fontSize: '0.750rem',
+      fontWeight: 700,
+      lineHeight: 1.43,
+    },
   },
   components: {
+    MuiTypography: {
+      defaultProps: {
+        variantMapping: {
+          smallBold: 'p',
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
@@ -89,6 +120,39 @@ let theme = createTheme({
         },
         containedPrimary: {
           boxShadow: '0 4px 6px rgba(63, 81, 181, 0.25)',
+        },
+      },
+    },
+    MuiList: {
+      styleOverrides: {
+        root: {
+          listStyleType: 'none',
+          padding: 0,
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 0,
+        },
+      },
+    },
+    MuiRadio: {
+      styleOverrides: {
+        root: {
+          padding: 0,
+          marginRight: '8px',
+          '& svg': {
+            display: 'none',
+          },
+        },
+      },
+    },
+    MuiFormControlLabel: {
+      styleOverrides: {
+        root: {
+          marginLeft: 0,
         },
       },
     },
