@@ -1,4 +1,4 @@
-import { Container, Typography, Paper, Box, Chip } from '@mui/material';
+import { Typography, Box, Chip } from '@mui/material';
 import { QuizTheme, QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
 import { notFound, redirect } from 'next/navigation';
 import { QuizPlayerWrapper } from './QuizPlayerWrapper';
