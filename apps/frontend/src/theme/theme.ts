@@ -1,5 +1,9 @@
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 import { fontConfig } from './fonts';
+import { QuizTheme, QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
+
+// Types pour les icônes
+type IconName = 'public' | 'history' | 'science' | 'menu_book' | 'palette' | 'sports_soccer' | 'psychology';
 
 // Déclaration des modules pour le thème personnalisé
 declare module '@mui/material/styles' {
@@ -10,6 +14,48 @@ declare module '@mui/material/styles' {
   // Permettre la configuration via createTheme()
   interface TypographyVariantsOptions {
     smallBold?: React.CSSProperties;
+  }
+  
+  // Étendre le thème avec notre configuration de quiz
+  interface Theme {
+    quizTheme: {
+      themes: Record<QuizTheme, {
+        color: string;
+        label: string;
+        iconColor: string;
+        icon: IconName;
+      }>;
+      difficulties: Record<QuizDifficulty, {
+        color: string;
+        label: string;
+        dots: number;
+      }>;
+    };
+  }
+  
+  interface ThemeOptions {
+    quizTheme?: {
+      themes?: Record<QuizTheme, {
+        color: string;
+        label: string;
+        iconColor: string;
+        icon: IconName;
+      }>;
+      difficulties?: Record<QuizDifficulty, {
+        color: string;
+        label: string;
+        dots: number;
+      }>;
+    };
+  }
+  
+  // Ajouter 'orange' aux options de palette
+  interface Palette {
+    orange: Palette['primary'];
+  }
+  
+  interface PaletteOptions {
+    orange?: PaletteOptions['primary'];
   }
 }
 
@@ -26,6 +72,7 @@ const successColor = '#4caf50';
 const errorColor = '#f44336';
 const warningColor = '#ff9800';
 const infoColor = '#2196f3';
+const orangeColor = '#ff5722';
 
 // Breakpoints pour le responsive
 export const breakpoints = {
@@ -34,6 +81,71 @@ export const breakpoints = {
   md: 960,
   lg: 1280,
   xl: 1920,
+};
+
+// Configuration des thèmes de quiz
+const quizThemes = {
+  [QuizTheme.GEOGRAPHY]: {
+    color: 'success.main',
+    label: 'Géographie',
+    iconColor: 'success.main',
+    icon: 'public' as IconName
+  },
+  [QuizTheme.HISTORY]: {
+    color: 'warning.main',
+    label: 'Histoire',
+    iconColor: 'warning.main',
+    icon: 'history' as IconName
+  },
+  [QuizTheme.SCIENCE]: {
+    color: 'info.main',
+    label: 'Sciences',
+    iconColor: 'info.main',
+    icon: 'science' as IconName
+  },
+  [QuizTheme.LITERATURE]: {
+    color: 'secondary.main',
+    label: 'Littérature',
+    iconColor: 'secondary.main',
+    icon: 'menu_book' as IconName
+  },
+  [QuizTheme.ARTS]: {
+    color: 'error.light',
+    label: 'Arts',
+    iconColor: 'error.light',
+    icon: 'palette' as IconName
+  },
+  [QuizTheme.SPORTS]: {
+    color: 'orange.main',
+    label: 'Sports',
+    iconColor: 'orange.main',
+    icon: 'sports_soccer' as IconName
+  },
+  [QuizTheme.GENERAL_KNOWLEDGE]: {
+    color: 'grey.600',
+    label: 'Culture générale',
+    iconColor: 'grey.600',
+    icon: 'psychology' as IconName
+  },
+};
+
+// Configuration des niveaux de difficulté
+const quizDifficulties = {
+  [QuizDifficulty.EASY]: {
+    color: 'success.main',
+    label: 'Facile',
+    dots: 1,
+  },
+  [QuizDifficulty.MEDIUM]: {
+    color: 'warning.main',
+    label: 'Moyen',
+    dots: 2,
+  },
+  [QuizDifficulty.HARD]: {
+    color: 'error.main',
+    label: 'Difficile',
+    dots: 3,
+  },
 };
 
 // Création du thème de base
@@ -57,6 +169,12 @@ let theme = createTheme({
     },
     info: {
       main: infoColor,
+    },
+    orange: {
+      main: orangeColor,
+      light: '#ff8a50',
+      dark: '#c41c00',
+      contrastText: '#ffffff',
     },
     background: {
       default: '#f5f5f5',
@@ -165,9 +283,18 @@ let theme = createTheme({
       },
     },
   },
+  // Ajouter notre configuration de quiz au thème
+  quizTheme: {
+    themes: quizThemes,
+    difficulties: quizDifficulties,
+  },
 });
 
 // Rendre les polices responsives
 theme = responsiveFontSizes(theme);
 
 export default theme;
+
+// Export des configurations de quiz pour compatibilité avec le code existant
+export const quizThemeConfig = quizThemes;
+export const quizDifficultyConfig = quizDifficulties;
