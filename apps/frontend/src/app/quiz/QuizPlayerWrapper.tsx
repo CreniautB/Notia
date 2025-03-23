@@ -136,7 +136,7 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
                         '& .MuiFormControlLabel-label': {
                           textAlign: 'center',
                           width: '100%',
-                          fontSize: '1.5rem',
+                          fontSize: '1.3rem',
                           fontWeight: 'bold',
                         },
                       }}
