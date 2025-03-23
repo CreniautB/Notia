@@ -39,9 +39,13 @@ jobs:
             git branch
             git log -1
 
-            # Pull des changements
-            echo "=== Pulling latest changes ==="
-            git pull origin master || { echo "Git pull failed"; exit 1; }
+            # Forcer la mise à jour du code (au lieu de git pull)
+            echo "=== Forcing update to latest changes ==="
+            git fetch origin
+            git stash || true
+            git reset --hard origin/master
+            git clean -fd package-lock.json || true
+            echo "Local changes discarded and reset to remote master completed"
 
             # Installer les dépendances
             echo "=== Installing dependencies ==="
