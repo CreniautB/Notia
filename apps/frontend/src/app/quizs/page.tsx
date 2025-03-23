@@ -1,8 +1,9 @@
-import { Container, Typography, Box } from '@mui/material';
+import { Typography, Box } from '@mui/material';
 import { QuizTheme, QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
 import { QuizCard } from './QuizCard';
 import type { Metadata } from 'next';
 import { serverApi } from '../../utils/server-api';
+import { ContentCard } from '../../components/ContentCard';
 
 interface QuizAvailability {
   count: number;
@@ -48,30 +49,36 @@ export default async function QuizCategoriesPage() {
 
   if (availableQuizzes.length === 0) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Aucun quiz disponible
-        </Typography>
-        <Typography variant="body1" align="center" color="text.secondary">
-          Désolé, aucun quiz n&apos;est disponible pour le moment. Veuillez réessayer plus tard.
-        </Typography>
-      </Container>
+      <ContentCard paperProps={{ sx: { p: 3, borderRadius: 3 } }}>
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Aucun quiz disponible
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Désolé, aucun quiz n&apos;est disponible pour le moment. Veuillez réessayer plus tard.
+          </Typography>
+        </Box>
+      </ContentCard>
     );
   }
 
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom align="center">
-        Choisissez votre Quiz
-      </Typography>
-      <Typography variant="h6" component="h2" gutterBottom align="center" color="text.secondary">
-        Sélectionnez une catégorie et une difficulté pour commencer
-      </Typography>
 
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Catégories disponibles
-        </Typography>
+
+  return (
+    <>
+      <ContentCard paperProps={{ sx: { p: 3, borderRadius: 3 } }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Choisissez votre Quiz
+          </Typography>
+          <Typography variant="h6" component="h2" gutterBottom color="text.secondary" sx={{ mb: 4 }}>
+            Sélectionnez une catégorie et une difficulté pour commencer
+          </Typography>
+          
+
+        </Box>
+
+
         <Box
           sx={{
             display: 'grid',
@@ -92,7 +99,7 @@ export default async function QuizCategoriesPage() {
             />
           ))}
         </Box>
-      </Box>
-    </Container>
+      </ContentCard>
+    </>
   );
 }
