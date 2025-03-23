@@ -7,9 +7,15 @@ echo "Déploiement de l'application Notia..."
 # Aller dans le répertoire du projet
 cd /home/notia/Notia
 
-# Récupérer les derniers changements
-echo "Récupération des derniers changements..."
-git pull origin master
+echo "=== Pulling latest changes ==="
+# Sauvegarder les changements locaux important (sauf package-lock.json)
+git stash save --keep-index "Sauvegarde automatique avant déploiement"
+
+# Forcer la récupération des derniers changements en écrasant les modifications locales
+git fetch --all
+git reset --hard origin/master
+git clean -f -d
+echo "Changements distants forcés et appliqués"
 
 # Installer les dépendances
 echo "Installation des dépendances..."
