@@ -65,6 +65,17 @@ jobs:
             # Port de l'application
             PORT=3001
 
+            # Configuration de l'authentification Google OAuth
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
+
+            # Liste des emails autorisés comme administrateurs
+            ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}
+
+            # Secret pour les sessions
+            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+
             # Autres variables d'environnement
             NODE_ENV=production
             JWT_SECRET=${{ secrets.JWT_SECRET }}
