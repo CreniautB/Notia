@@ -128,6 +128,10 @@ export default function BackofficePage() {
     return <LoadingState />;
   }
 
+  if(error) {
+    return <div>Erreur: {error}</div>;
+  }
+
   // Si l'authentification n'est pas confirmée, afficher un message de chargement
   // La redirection sera gérée par le useEffect
   if (!authStatus?.isAuthenticated || !authStatus?.user?.isAdmin) {
