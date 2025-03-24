@@ -15,7 +15,8 @@ const DEFAULT_CONFIG: RequestInit = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  // Note: credentials n'est pas nécessaire côté serveur car les cookies ne sont pas partagés
+  credentials: 'include', // Important pour envoyer les cookies d'authentification
+  mode: 'cors',
 };
 
 /**
@@ -32,13 +33,17 @@ export const serverApi = {
    */
   async get<T>(endpoint: string, config?: RequestInit, revalidate?: number): Promise<ApiResult<T>> {
     try {
+      console.log("Envoi requête GET vers", API_BASE_URL + endpoint, "avec credentials inclus");
       const response = await sendRequest<T>(endpoint, {
         ...DEFAULT_CONFIG,
         ...config,
         method: 'GET',
+        credentials: 'include', // S'assurer que les credentials sont inclus
         next: revalidate !== undefined ? { revalidate } : undefined,
       });
 
+      console.log("Réponse reçue:", response);
+      
       if (response.success && response.data) {
         return { data: response.data, error: null };
       } else {
@@ -48,6 +53,7 @@ export const serverApi = {
         };
       }
     } catch (error) {
+      console.error("Erreur complète lors de la requête:", error);
       const apiError: ApiError = {
         message: error instanceof Error ? error.message : 'Une erreur inattendue est survenue',
         code: 'NETWORK_ERROR',
@@ -167,7 +173,23 @@ async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<Ap
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   try {
-    const response = await fetch(url, config);
+    // Ajouter le token JWT depuis localStorage à l'en-tête Authorization si disponible
+    let headers = { ...config.headers };
+    
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers = {
+          ...headers,
+          'Authorization': `Bearer ${token}`
+        };
+      }
+    }
+    
+    const response = await fetch(url, {
+      ...config,
+      headers
+    });
 
     // Vérifier si la requête a réussi
     if (!response.ok) {

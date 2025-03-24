@@ -5,20 +5,21 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
 import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Configuration CORS pour permettre les requêtes depuis le frontend
+  // Configuration de CORS
   app.enableCors({
-    origin: [
-      'http://localhost:4200',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-    ], // URLs du frontend
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-requested-with'],
+    exposedHeaders: ['Set-Cookie']
   });
+
+  app.use(cookieParser());
 
   // Configuration Swagger
   const config = new DocumentBuilder()
@@ -51,7 +52,8 @@ async function bootstrap() {
     app.useStaticAssets(frontendPath);
   }
 
-  await app.listen(3001);
+  // Écouter sur l'interface IPv4 pour assurer la compatibilité avec le tunnel SSH
+  await app.listen(3001, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 

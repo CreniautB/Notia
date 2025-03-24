@@ -9,6 +9,8 @@ import {
   RejectedQuestionSchema,
 } from './schemas/rejected-question.schema';
 import { SharedModule } from '../shared/shared.module';
+import { QuestionsController } from './controller/questions.controller';
+import { QuestionsService } from './service/questions.service';
 
 @Module({
   imports: [
@@ -19,8 +21,8 @@ import { SharedModule } from '../shared/shared.module';
     ]),
     SharedModule,
   ],
-  controllers: [QuizController],
-  providers: [QuizService],
-  exports: [QuizService],
+  controllers: [QuizController, QuestionsController],
+  providers: [QuizService, QuestionsService],
+  exports: [QuizService, QuestionsService],
 })
 export class QuizModule {}
