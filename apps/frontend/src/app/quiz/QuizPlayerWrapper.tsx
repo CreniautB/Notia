@@ -12,8 +12,10 @@ import {
   useTheme,
   alpha,
   Grid,
+  Fade,
 } from '@mui/material';
 import type { Quiz } from './types';
+import { ContentCard } from '@/components/ContentCard';
 
 interface QuizPlayerWrapperProps {
   quiz: Quiz;
@@ -26,8 +28,25 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<typeof quiz.questions[0]['options']>([]);
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
+
+  // Fonction pour mélanger un tableau
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Mélanger les options quand la question change
+  useEffect(() => {
+    setShuffledOptions(shuffleArray(currentQuestion.options));
+  }, [currentQuestionIndex]);
 
   useEffect(() => {
     if (selectedAnswer !== null) {
@@ -37,16 +56,30 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
         setScore((prev) => prev + currentQuestion.points);
       }
 
-      const timer = setTimeout(() => {
+      // Déclencher l'animation de sortie
+      const transitionOutTimer = setTimeout(() => {
+        setIsTransitioning(true);
+      }, 800);
+
+      // Changer de question après l'animation de sortie
+      const questionChangeTimer = setTimeout(() => {
         if (currentQuestionIndex < quiz.questions.length - 1) {
           setCurrentQuestionIndex(currentQuestionIndex + 1);
           setSelectedAnswer(null);
+          
+          // Réinitialiser l'animation pour la prochaine question
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 50);
         } else {
           setIsQuizCompleted(true);
         }
       }, 1250);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(transitionOutTimer);
+        clearTimeout(questionChangeTimer);
+      };
     }
     return undefined;
   }, [selectedAnswer, currentQuestion, currentQuestionIndex, quiz.questions.length]);
@@ -66,38 +99,56 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
     setSelectedAnswer(null);
     setIsQuizCompleted(false);
     setScore(0);
+    setIsTransitioning(false);
+    setShuffledOptions(shuffleArray(currentQuestion.options));
   };
 
   if (isQuizCompleted) {
     const totalPoints = quiz.questions.reduce((acc, question) => acc + question.points, 0);
     return (
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>
-          Quiz terminé !
-        </Typography>
-        <Typography variant="h5" gutterBottom>
-          Votre score : {score} / {totalPoints} points
-        </Typography>
-        <Button variant="contained" color="primary" onClick={handleRestartQuiz} sx={{ mt: 2 }}>
-          Recommencer le quiz
-        </Button>
-      </Box>
+      <ContentCard>
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Fade in timeout={800}>
+            <Box>
+              <Typography variant="h4" gutterBottom>
+                Quiz terminé !
+              </Typography>
+              <Typography variant="h5" gutterBottom>
+                Votre score : {score} / {totalPoints} points
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={handleRestartQuiz} 
+                sx={{ 
+                  mt: 2,
+                  fontSize: '1.1rem',
+                }}
+              >
+                Nouveau quiz
+              </Button>
+            </Box>
+          </Fade>
+        </Box>
+      </ContentCard>
     );
   }
 
-  return (
-    <Box sx={{ mt: 4 }}>
+  // Le contenu de la question et des réponses
+  const questionContent = (
+    <>
       <Typography variant="smallBold" gutterBottom>
         Question {currentQuestionIndex + 1} sur {quiz.questions.length}
       </Typography>
+      
       <Typography variant="h4" gutterBottom>
         {currentQuestion.content}
       </Typography>
+      
       {currentQuestion.type === 'multiple_choice' && (
         <FormControl component="fieldset" sx={{ width: '100%', mt: 2 }}>
           <RadioGroup value={selectedAnswer || ''} onChange={handleAnswerSelect}>
             <Grid container spacing={2}>
-              {currentQuestion.options.map((option) => {
+              {shuffledOptions.map((option) => {
                 const isSelected = selectedAnswer === option.content;
                 const isCorrect = option.isCorrect;
                 const showFeedback = selectedAnswer !== null;
@@ -124,15 +175,9 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
                         p: 2,
                         width: '100%',
                         m: 'auto',
-                        transition: 'all 0.2s ease-in-out',
                         backgroundColor: showFeedback
                           ? backgroundColor
                           : alpha(theme.palette.primary.main, 0.04),
-                        '&:hover': {
-                          backgroundColor: showFeedback
-                            ? backgroundColor
-                            : alpha(theme.palette.primary.main, 0.08),
-                        },
                         '& .MuiFormControlLabel-label': {
                           textAlign: 'center',
                           width: '100%',
@@ -148,6 +193,16 @@ export function QuizPlayerWrapper({ quiz }: QuizPlayerWrapperProps) {
           </RadioGroup>
         </FormControl>
       )}
-    </Box>
+    </>
+  );
+
+  return (
+    <ContentCard>
+      <Box>
+        <Fade in={!isTransitioning} timeout={500}>
+          <Box>{questionContent}</Box>
+        </Fade>
+      </Box>
+    </ContentCard>
   );
 }

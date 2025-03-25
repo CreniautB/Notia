@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { serverApi } from '../../utils/server-api';
 
 // URL de l'API backend avec valeur par défaut en cas de non-définition
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,12 @@ export default function LoginPage() {
 
   // Fonction pour rediriger vers Google Auth
   const handleGoogleLogin = () => {
-    window.open(`${API_URL}/api/auth/google`, '_blank');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
+    console.log("Redirection vers Google Auth:", `${apiUrl}/api/auth/google`);
+    
+    // Utiliser window.location pour une redirection complète de la page
+    // Cela permet d'éviter les problèmes de CORS avec les cookies
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   // Vérifier si l'utilisateur est déjà connecté

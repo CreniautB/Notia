@@ -7,7 +7,14 @@ export interface ApiResult<T> {
 }
 
 // URL complète de l'API pour les appels côté serveur
-const API_BASE_URL = 'http://localhost:3001/api';
+// Utiliser soit l'URL configurée, soit une valeur par défaut
+// En développement: http://127.0.0.1:3001/api (utiliser IPv4 et non localhost)
+// En production: http://217.154.16.57/api
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : 'http://127.0.0.1:3001/api';
+
+console.log('API URL configurée pour server-api:', API_BASE_URL);
 
 // Configuration par défaut des requêtes
 const DEFAULT_CONFIG: RequestInit = {

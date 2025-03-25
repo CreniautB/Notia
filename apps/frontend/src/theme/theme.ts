@@ -239,6 +239,12 @@ let theme = createTheme({
         containedPrimary: {
           boxShadow: '0 4px 6px rgba(63, 81, 181, 0.25)',
         },
+        outlined: {
+          border: 'none',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+          padding: '0.4rem 1rem',
+    
+        },
       },
     },
     MuiList: {

@@ -11,10 +11,7 @@ import { QuizModule } from './quiz/quiz.module';
 import { ModuleRef } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { SharedModule } from './shared/shared.module';
-import { MediaModule } from './media/media.module';
 import { JwtModule } from '@nestjs/jwt';
-
-import { QuestionsController } from './app/quiz/controller/questions.controller';
 
 @Module({
   imports: [
@@ -52,12 +49,11 @@ import { QuestionsController } from './app/quiz/controller/questions.controller'
       inject: [ConfigService],
     }),
     SharedModule,
-    MediaModule,
     AuthModule,
     AdminModule,
     QuizModule,
   ],
-  controllers: [AppController, QuestionsController],
+  controllers: [AppController],
   providers: [
     AppService,
     {

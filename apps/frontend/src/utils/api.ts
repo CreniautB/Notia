@@ -9,7 +9,11 @@ const DEFAULT_CONFIG: RequestInit = {
 };
 
 // URL de base de l'API
+// Utiliser directement /api pour les requêtes côté client
+// car les requêtes sont acheminées via les rewrites de Next.js
 const API_BASE_URL = '/api';
+
+console.log('API URL configurée pour api côté client:', API_BASE_URL);
 
 /**
  * Utilitaire pour effectuer des requêtes HTTP vers l'API

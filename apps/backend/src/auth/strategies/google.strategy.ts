@@ -10,10 +10,34 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private configService: ConfigService,
     private authService: AuthService,
   ) {
+    // Récupérer l'URL de callback depuis les variables d'environnement
+    let callbackUrl = configService.get<string>('GOOGLE_CALLBACK_URL') || 'http://127.0.0.1:3001/api/auth/google/callback';
+    
+    // S'assurer que l'URL contient 127.0.0.1 et non localhost
+    if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+      if (callbackUrl.includes('localhost')) {
+        callbackUrl = callbackUrl.replace('localhost', '127.0.0.1');
+        console.log("URL de callback modifiée pour utiliser IPv4:", callbackUrl);
+      }
+    }
+    
+    // Adapter l'URL en fonction de l'environnement si nécessaire
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    if (isProduction && !callbackUrl.includes('217.154.16.57')) {
+      // En prod, s'assurer que l'URL contient l'adresse du serveur
+      callbackUrl = 'http://217.154.16.57/api/auth/google/callback';
+      console.log("URL de callback modifiée pour la production:", callbackUrl);
+    }
+    
+    // Log pour le débogage
+    console.log(`Environnement: ${isProduction ? 'production' : 'development'}`);
+    console.log("URL de callback Google configurée:", callbackUrl);
+    
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL') || 'http://localhost:3001/api/auth/google/callback',
+      callbackURL: callbackUrl,
       scope: ['email', 'profile'],
     });
   }

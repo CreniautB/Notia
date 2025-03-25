@@ -83,10 +83,17 @@ const nextConfig = {
     return config;
   },
   async rewrites() {
+    // Choisir l'URL API en fonction de l'environnement
+    const apiBaseUrl = process.env.NODE_ENV === 'production'
+      ? 'http://217.154.16.57'
+      : 'http://127.0.0.1:3001';
+    
+    console.log(`[Config] Environnement: ${process.env.NODE_ENV}, API URL de base: ${apiBaseUrl}`);
+    
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:3001/api/:path*',
+        destination: `${apiBaseUrl}/api/:path*`,
       },
     ];
   },
