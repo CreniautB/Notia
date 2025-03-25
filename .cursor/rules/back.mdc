@@ -1,4 +1,9 @@
 ---
+description: 
+globs: 
+alwaysApply: true
+---
+---
 description: Nest.js Backend app
 globs: 
 alwaysApply: false

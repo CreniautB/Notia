@@ -77,7 +77,10 @@ interface SimpleBatchResult {
 }
 
 @ApiTags('quiz')
-@Controller('quiz')
+@Controller({
+  path: 'quiz',
+  version: '1'
+})
 export class QuizController {
   constructor(private readonly quizService: QuizService) {}
 
@@ -283,7 +286,7 @@ export class QuizController {
     }
   }
 
-  @Get('rejected-questions')
+  @Get('rejected/list')
   @ApiOperation({
     summary: 'Récupère les questions rejetées avec pagination et filtres',
     description:
@@ -341,7 +344,7 @@ export class QuizController {
     );
   }
 
-  @Get('rejected-questions/:id')
+  @Get('rejected/:id')
   @ApiOperation({
     summary: 'Récupère une question rejetée par son ID',
     description: "Récupère les détails d'une question rejetée spécifique.",
@@ -357,7 +360,7 @@ export class QuizController {
     return this.quizService.findOneRejectedQuestion(id);
   }
 
-  @Patch('rejected-questions/:id')
+  @Patch('rejected/:id')
   @ApiOperation({
     summary: 'Met à jour une question rejetée',
     description:
@@ -381,7 +384,7 @@ export class QuizController {
     );
   }
 
-  @Post('rejected-questions/:id/approve')
+  @Post('rejected/:id/approve')
   @ApiOperation({
     summary: 'Approuve une question rejetée',
     description:
@@ -407,7 +410,7 @@ export class QuizController {
     return this.quizService.approveRejectedQuestion(id, reviewedBy);
   }
 
-  @Delete('rejected-questions/:id')
+  @Delete('rejected/:id')
   @ApiOperation({
     summary: 'Supprime une question rejetée',
     description:
@@ -422,5 +425,11 @@ export class QuizController {
   @HttpCode(204)
   async removeRejectedQuestion(@Param('id') id: string) {
     return this.quizService.removeRejectedQuestion(id);
+  }
+
+  // Ancienne route, redirige vers la nouvelle
+  @Get('rejected-questions')
+  async redirectRejectedQuestions() {
+    return { message: "Cette route est dépréciée. Utilisez /api/quiz/rejected/list à la place" };
   }
 }

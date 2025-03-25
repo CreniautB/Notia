@@ -27,6 +27,7 @@ export class AuthController {
     // Après authentification, générer un JWT
     console.log("Callback Google OAuth reçu - authentifié:", req.isAuthenticated());
     console.log("User:", req.user);
+    console.log("Environnement:", process.env.NODE_ENV || 'development');
     
     if (!req.user) {
       console.error("Aucun utilisateur trouvé dans la requête");
@@ -39,15 +40,15 @@ export class AuthController {
     // Définir le token JWT comme cookie
     res.cookie('auth_token', token, {
       httpOnly: false,
-      secure: false, // Mettre à true en production avec HTTPS
+      secure: process.env.NODE_ENV === 'production', // Secure en production
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 heures
       path: '/',
     });
     
-    // Rediriger vers le backoffice avec le token en paramètre pour localStorage
+    // Récupérer l'URL frontend depuis les variables d'environnement
     const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:4200');
-    console.log("Redirection vers:", `${frontendUrl}/backoffice`);
+    console.log("Redirection vers:", `${frontendUrl}/auth-callback?token=${encodeURIComponent(token)}`);
     
     // Rediriger vers une page intermédiaire qui stockera le token dans localStorage
     res.redirect(`${frontendUrl}/auth-callback?token=${encodeURIComponent(token)}`);

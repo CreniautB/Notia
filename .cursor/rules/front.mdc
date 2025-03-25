@@ -1,6 +1,11 @@
 ---
+description:
+globs:
+alwaysApply: true
+---
+---
 description: Next.js React TypeScript
-globs: 
+globs:
 alwaysApply: false
 ---
 
@@ -14,6 +19,9 @@ Key Principles
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
 - Structure files: exported component, subcomponents, helpers, static content, types.
 - Don't add comment
+- Always leverage existing configuration from theme.ts for colors, typography, spacing, and other design tokens instead of hardcoding values
+- Always use type definitions from shared interface files (like QuizTypes.ts) to ensure type consistency across the application
+- Don't add hover effects to cards or UI components unless specifically requested
 
 Naming Conventions
 - Use lowercase with dashes for directories (e.g., components/auth-wizard).
@@ -32,6 +40,8 @@ Syntax and Formatting
 UI and Styling
 - Use Shadcn UI, Radix, and Tailwind for components and styling.
 - Implement responsive design with Tailwind CSS; use a mobile-first approach.
+- Keep UI simple and minimalist, focus on readability and usability.
+- Avoid unnecessary animations, transitions, or hover effects.
 
 Performance Optimization
 - Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
@@ -48,7 +58,7 @@ Key Conventions
 - Avoid for data fetching or state management.
 
 Material Ui
-- Use material ui to create html 
+- Use material ui to create html
 - prefer sx than emotion
 
 Follow Next.js docs for Data Fetching, Rendering, and Routing.
