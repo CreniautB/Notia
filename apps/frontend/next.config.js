@@ -82,7 +82,7 @@ const nextConfig = {
   async rewrites() {
     // Choisir l'URL API en fonction de l'environnement
     const apiBaseUrl = process.env.NODE_ENV === 'production'
-      ? 'http://217.154.16.57'
+      ? process.env.NEXT_PUBLIC_API_URL || 'http://217.154.16.57'
       : 'http://127.0.0.1:3001';
     
     console.log(`[Config] Environnement: ${process.env.NODE_ENV}, API URL de base: ${apiBaseUrl}`);
