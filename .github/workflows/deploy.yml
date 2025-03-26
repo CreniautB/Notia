@@ -63,7 +63,7 @@ jobs:
             MONGODB_CONNECTION_TIMEOUT=10000
 
             # Port de l'application
-            PORT=3001
+            PORT=${{ secrets.PORT }}
 
             # Configuration de l'authentification Google OAuth
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
@@ -76,10 +76,20 @@ jobs:
             # Secret pour les sessions
             SESSION_SECRET=${{ secrets.SESSION_SECRET }}
 
+            # URL du frontend pour les redirections
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+
             # Autres variables d'environnement
-            NODE_ENV=production
+            NODE_ENV=${{ secrets.NODE_ENV }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             EOL
+
+            # Vérifier que MONGODB_URI n'est pas vide
+            if [ -z "$(grep -oP '(?<=MONGODB_URI=).*' apps/backend/.env)" ]; then
+              echo "❌ Erreur: MONGODB_URI est vide dans le fichier .env du backend"
+              echo "Veuillez configurer le secret MONGODB_URI dans les paramètres GitHub Actions."
+              exit 1
+            fi
 
             # Créer le fichier .env pour le frontend
             echo "=== Création du fichier .env pour le frontend ==="
