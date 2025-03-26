@@ -11,8 +11,8 @@ export interface ApiResult<T> {
 // En développement: http://127.0.0.1:3001/api (utiliser IPv4 et non localhost)
 // En production: http://217.154.16.57/api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-  : 'http://127.0.0.1:3001/api';
+  ? process.env.NEXT_PUBLIC_API_URL
+  : 'http://127.0.0.1:3001';
 
 console.log('API URL configurée pour server-api:', API_BASE_URL);
 
@@ -177,7 +177,9 @@ export const serverApi = {
  * Fonction interne pour envoyer la requête et gérer les erreurs
  */
 async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<ApiResponse<T>> {
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  // Assurons-nous que l'URL est correctement formée avec /api
+  const apiPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}/api${apiPath}`;
 
   try {
     // Ajouter le token JWT depuis localStorage à l'en-tête Authorization si disponible

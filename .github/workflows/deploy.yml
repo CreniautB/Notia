@@ -175,7 +175,27 @@ jobs:
 
             # Redémarrer les services
             echo "=== Restarting services ==="
-            pm2 restart notia-frontend notia-backend || { echo "PM2 restart failed"; exit 1; }
+            # Remplacer la commande de redémarrage PM2 par une logique qui vérifie d'abord si les processus existent
+            pm2 describe notia-frontend > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+              echo "Redémarrage du frontend..."
+              pm2 restart notia-frontend || { echo "PM2 restart frontend failed"; }
+            else
+              echo "Démarrage du frontend..."
+              cd /home/notia/Notia
+              pm2 start apps/frontend/.next/standalone/server.js --name notia-frontend || { echo "PM2 start frontend failed"; exit 1; }
+            fi
+
+            pm2 describe notia-backend > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+              echo "Redémarrage du backend..."
+              pm2 restart notia-backend || { echo "PM2 restart backend failed"; }
+            else
+              echo "Démarrage du backend..."
+              cd /home/notia/Notia
+              pm2 start apps/backend/dist/main.js --name notia-backend || { echo "PM2 start backend failed"; exit 1; }
+            fi
+
             pm2 save
 
             echo "=== Deployment complete ==="
