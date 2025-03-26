@@ -19,7 +19,9 @@ interface QuizAvailability {
 async function getAvailableQuizzes(): Promise<QuizAvailability[]> {
   try {
     // Utilisation de l'API avec destructuration des données et erreurs
-    const { data, error } = await serverApi.get<QuizAvailability[]>('/quiz/available', {}, 0);
+    const { data, error } = await serverApi.get<QuizAvailability[]>('/quiz/available', {
+      next: { revalidate: 60 }
+    }, 60);
 
     // Gestion des erreurs
     if (error) {
