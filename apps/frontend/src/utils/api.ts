@@ -8,10 +8,12 @@ const DEFAULT_CONFIG: RequestInit = {
   credentials: 'include', // Pour envoyer les cookies avec les requêtes
 };
 
-// Modifions la constante API_BASE_URL pour utiliser l'URL de l'API depuis les variables d'environnement
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+// Configuration de l'URL de base de l'API
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.NEXT_PUBLIC_API_URL 
+  : '/api';
 
-console.log('API URL configurée pour api côté client:', API_BASE_URL);
+console.log('API URL configurée:', API_BASE_URL);
 
 /**
  * Utilitaire pour effectuer des requêtes HTTP vers l'API
@@ -83,13 +85,14 @@ export const api = {
  * Fonction interne pour envoyer la requête et gérer les erreurs
  */
 async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<ApiResponse<T>> {
-  // Construire l'URL sans ajouter de /api supplémentaire
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  
   console.log('Envoi requête vers:', url);
   
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(url, {
+      ...config,
+      next: { revalidate: 60 }, // Ajout de la revalidation
+    });
 
     // Vérifier si la requête a réussi
     if (!response.ok) {
