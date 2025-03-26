@@ -8,10 +8,8 @@ const DEFAULT_CONFIG: RequestInit = {
   credentials: 'include', // Pour envoyer les cookies avec les requêtes
 };
 
-// URL de base de l'API
-// Utiliser directement /api pour les requêtes côté client
-// car les requêtes sont acheminées via les rewrites de Next.js
-const API_BASE_URL = '/api';
+// Modifions la constante API_BASE_URL pour utiliser l'URL de l'API depuis les variables d'environnement
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 console.log('API URL configurée pour api côté client:', API_BASE_URL);
 
@@ -85,8 +83,11 @@ export const api = {
  * Fonction interne pour envoyer la requête et gérer les erreurs
  */
 async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<ApiResponse<T>> {
+  // Construire l'URL sans ajouter de /api supplémentaire
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
+  
+  console.log('Envoi requête vers:', url);
+  
   try {
     const response = await fetch(url, config);
 
