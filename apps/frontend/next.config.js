@@ -9,7 +9,7 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Désactiver certaines optimisations qui peuvent bloquer le build
-  swcMinify: false,
+  // swcMinify: false, // Suppression de cette option qui n'est plus supportée
   
   // Personnaliser les règles ESLint
   eslint: {
@@ -59,11 +59,8 @@ const nextConfig = {
         splitChunks: {
           chunks: 'all',
           minSize: 20000,
-          maxSize: 0,
-          minChunks: 1,
-          maxAsyncRequests: 30,
-          maxInitialRequests: 30,
-          automaticNameDelimiter: '~',
+          // Correction des configurations de splitChunks
+          // Supprimer maxSize: 0 qui cause des avertissements
           cacheGroups: {
             defaultVendors: {
               test: /[\\/]node_modules[\\/]/,

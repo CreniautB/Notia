@@ -5,6 +5,9 @@ import type { Metadata } from 'next';
 import { serverApi } from '../../utils/server-api';
 import { ContentCard } from '../../components/ContentCard';
 
+// Ajouter la revalidation pour cette page pour éviter l'erreur de rendu statique
+export const revalidate = 60; // Revalidation toutes les 60 secondes
+
 interface QuizAvailability {
   count: number;
   theme: string;
