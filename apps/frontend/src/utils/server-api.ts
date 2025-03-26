@@ -181,7 +181,7 @@ async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<Ap
   // Le backend utilise un versionnement d'API (v1)
   const apiPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   // Ajout de "v1" dans l'URL pour correspondre au contrôleur backend
-  const url = `${API_BASE_URL}/api/v1${apiPath}`;
+  const url = `${API_BASE_URL}/api${apiPath}`;
 
   console.log("URL complète de la requête:", url);
 
