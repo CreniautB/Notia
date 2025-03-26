@@ -177,9 +177,13 @@ export const serverApi = {
  * Fonction interne pour envoyer la requête et gérer les erreurs
  */
 async function sendRequest<T>(endpoint: string, config: RequestInit): Promise<ApiResponse<T>> {
-  // Assurons-nous que l'URL est correctement formée avec /api
+  // Assurons-nous que l'URL est correctement formée avec /api/v1
+  // Le backend utilise un versionnement d'API (v1)
   const apiPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}/api${apiPath}`;
+  // Ajout de "v1" dans l'URL pour correspondre au contrôleur backend
+  const url = `${API_BASE_URL}/api/v1${apiPath}`;
+
+  console.log("URL complète de la requête:", url);
 
   try {
     // Ajouter le token JWT depuis localStorage à l'en-tête Authorization si disponible
