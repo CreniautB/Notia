@@ -18,8 +18,7 @@ interface QuizAvailability {
 
 async function getAvailableQuizzes(): Promise<QuizAvailability[]> {
   try {
-    // Assurez-vous d'utiliser la bonne route API pour récupérer les quiz disponibles
-    // Nous utilisons /quiz/available car c'est la route définie dans le backend
+    // Utilisation de l'API avec destructuration des données et erreurs
     const { data, error } = await serverApi.get<QuizAvailability[]>('/quiz/available', {
       next: { revalidate: 60 }
     }, 60);

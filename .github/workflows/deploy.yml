@@ -39,7 +39,7 @@ jobs:
             git branch
             git log -1
 
-            # Forcer la mise à jour du code (au lieu de git pull)
+            # Forcer la mise à jour du code
             echo "=== Forcing update to latest changes ==="
             git fetch origin
             git stash || true
@@ -51,158 +51,73 @@ jobs:
             echo "=== Installing dependencies ==="
             npm install || { echo "npm install failed"; exit 1; }
 
-            # Créer le fichier .env pour le backend
-            echo "=== Vérification du fichier .env pour le backend ==="
-            if [ -f "apps/backend/.env" ]; then
-              echo "✅ Le fichier .env du backend existe déjà."
-            else
-              echo "⚠️ Le fichier .env du backend n'existe pas."
-              echo "Vous devez créer manuellement ce fichier sur le serveur."
-              echo "Chemin: /home/notia/Notia/apps/backend/.env"
-              echo "Exemple de contenu:"
-              echo "MONGODB_URI=mongodb://localhost:27017/notia"
-              echo "PORT=3001"
-              echo "NODE_ENV=production"
-              echo "..."
+            # Vérifier les fichiers .env
+            echo "=== Vérification des fichiers .env ==="
+            if [ ! -f "apps/backend/.env" ]; then
+              echo "❌ Erreur: Le fichier .env du backend n'existe pas"
               exit 1
             fi
 
-            # Vérifier que MONGODB_URI n'est pas vide dans le fichier .env
-            if [ -z "$(grep -oP '(?<=MONGODB_URI=).*' apps/backend/.env)" ]; then
-              echo "❌ Erreur: MONGODB_URI est vide ou non défini dans le fichier .env du backend"
-              echo "Veuillez éditer le fichier .env et configurer MONGODB_URI correctement."
-              echo "Commande: nano /home/notia/Notia/apps/backend/.env"
+            if [ ! -f "apps/frontend/.env.local" ]; then
+              echo "❌ Erreur: Le fichier .env.local du frontend n'existe pas"
               exit 1
             fi
 
-            # Créer le fichier .env pour le frontend
-            echo "=== Vérification du fichier .env pour le frontend ==="
-            if [ -f "apps/frontend/.env.local" ]; then
-              echo "✅ Le fichier .env.local du frontend existe déjà."
-            else
-              echo "⚠️ Le fichier .env.local du frontend n'existe pas."
-              echo "Vous devez créer manuellement ce fichier sur le serveur."
-              echo "Chemin: /home/notia/Notia/apps/frontend/.env.local"
-              echo "Exemple de contenu:"
-              echo "NEXT_PUBLIC_API_URL=http://217.154.16.57"
-              exit 1
-            fi
-
-            # Vérifier que NEXT_PUBLIC_API_URL n'est pas vide dans le fichier .env.local
-            if [ -z "$(grep -oP '(?<=NEXT_PUBLIC_API_URL=).*' apps/frontend/.env.local)" ]; then
-              echo "❌ Erreur: NEXT_PUBLIC_API_URL est vide ou non défini dans le fichier .env.local du frontend"
-              echo "Veuillez éditer le fichier .env.local et configurer NEXT_PUBLIC_API_URL correctement."
-              echo "Commande: nano /home/notia/Notia/apps/frontend/.env.local"
-              exit 1
-            fi
-
-            # Vérifier la connexion à MongoDB avant de continuer
+            # Vérifier la connexion à MongoDB
             echo "=== Vérification de la connexion à MongoDB ==="
-            # Installer mongodb-clients si nécessaire
-            which mongosh > /dev/null || sudo apt-get update && sudo apt-get install -y mongodb-clients
-
-            # Extraire l'URI de MongoDB du fichier .env local
             MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
-
-            # Afficher l'URI (en masquant les informations sensibles)
-            MASKED_URI=$(echo "$MONGO_URI" | sed 's/\/\/.*@/\/\/****:****@/')
-            echo "URI MongoDB: $MASKED_URI"
-
-            # Vérifier si l'URI est valide et contient tous les éléments nécessaires
-            if [[ ! "$MONGO_URI" =~ ^mongodb(\+srv)?:\/\/ ]]; then
-              echo "❌ Erreur: Format de l'URI MongoDB invalide dans le fichier .env local"
-              echo "L'URI doit commencer par mongodb:// ou mongodb+srv://"
-              echo "Veuillez corriger le fichier .env avec la bonne URI"
-              echo "Exemple: MONGODB_URI=mongodb://localhost:27017/notia"
+            if [ -z "$MONGO_URI" ]; then
+              echo "❌ Erreur: MONGODB_URI n'est pas défini"
               exit 1
             fi
 
-            # Tester la connexion à MongoDB avec plus de détails
-            echo "Tentative de connexion à MongoDB..."
-            if mongosh "$MONGO_URI" --eval "try { db.adminCommand('ping'); print('Databases:'); db.getMongo().getDBNames().forEach(db => print(' - ' + db)); } catch(e) { print('Error: ' + e); quit(1); }" > mongo_test_output.txt 2>&1; then
-              echo "✅ Connexion à MongoDB réussie !"
-              cat mongo_test_output.txt
-            else
+            # Tester la connexion MongoDB
+            if ! mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
               echo "❌ Erreur: Impossible de se connecter à MongoDB"
-              echo "Détails de l'erreur:"
-              cat mongo_test_output.txt
-              echo "Vérifiez l'URI de connexion dans le fichier .env et assurez-vous que MongoDB est accessible."
-              echo "Pour un déploiement en production, utilisez: MONGODB_URI=mongodb://localhost:27017/notia"
               exit 1
             fi
-
-            # Vérifier si la base de données "notia" existe, sinon la créer avec des données de test
-            echo "Vérification de la base de données notia..."
-            if ! grep -q "notia" mongo_test_output.txt; then
-              echo "⚠️ La base de données 'notia' n'existe pas encore, initialisation avec des données de test..."
-              mongosh "$MONGO_URI" --eval '
-                use notia;
-                // Créer une collection quiz avec quelques entrées de test
-                db.quizzes.insertMany([
-                  {
-                    title: "Quiz de démarrage",
-                    description: "Quiz de test pour vérifier que tout fonctionne",
-                    theme: "science",
-                    difficulty: "easy",
-                    questions: [
-                      {
-                        type: "multiple_choice",
-                        content: "Quelle est la capitale de la France?",
-                        options: [
-                          { content: "Berlin", isCorrect: false },
-                          { content: "Paris", isCorrect: true },
-                          { content: "Rome", isCorrect: false },
-                          { content: "Madrid", isCorrect: false }
-                        ],
-                        points: 10
-                      }
-                    ],
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                  }
-                ]);
-                print("Base de données initialisée avec succès!");
-              ' || { echo "Erreur lors de l'initialisation de la base de données"; exit 1; }
-            fi
-
-            # Nettoyage du fichier temporaire
-            rm mongo_test_output.txt
+            echo "✅ Connexion à MongoDB réussie"
 
             # Build
             echo "=== Building projects ==="
+            # Nettoyer les builds précédents
+            rm -rf apps/frontend/.next
+            rm -rf apps/backend/dist
+
+            # Build des projets
             npx nx run-many --target=build --projects=frontend,backend || { echo "Build failed"; exit 1; }
 
             # Vérifier les processus PM2
             echo "=== Current PM2 processes ==="
             pm2 list
 
-            # Redémarrer les services
-            echo "=== Restarting services ==="
-
-            # Supprimer les processus arrêtés avant d'en créer de nouveaux
-            echo "Nettoyage des processus PM2 arrêtés..."
+            # Nettoyer les processus existants
+            echo "=== Nettoyage des processus PM2 ==="
             pm2 delete notia-frontend 2>/dev/null || true
             pm2 delete notia-backend 2>/dev/null || true
 
             # Démarrage des services
-            echo "Démarrage des services..."
+            echo "=== Démarrage des services ==="
             cd /home/notia/Notia
 
-            # Vérifier si le fichier server.js existe
+            # Vérifier et démarrer le frontend
             if [ -f "apps/frontend/.next/standalone/server.js" ]; then
               echo "Démarrage du frontend..."
-              PORT=3000 NODE_ENV=production pm2 start apps/frontend/.next/standalone/server.js --name notia-frontend || { echo "PM2 start frontend failed"; exit 1; }
+              PORT=3000 NODE_ENV=production NEXT_PUBLIC_API_URL=http://217.154.16.57 pm2 start apps/frontend/.next/standalone/server.js --name notia-frontend || { echo "PM2 start frontend failed"; exit 1; }
             else
-              echo "❌ Erreur: Le fichier server.js du frontend n'existe pas à l'emplacement attendu."
+              echo "❌ Erreur: Le fichier server.js du frontend n'existe pas"
               ls -la apps/frontend/.next/
+              exit 1
             fi
 
+            # Vérifier et démarrer le backend
             if [ -f "apps/backend/dist/main.js" ]; then
               echo "Démarrage du backend..."
               pm2 start apps/backend/dist/main.js --name notia-backend || { echo "PM2 start backend failed"; exit 1; }
             else
-              echo "❌ Erreur: Le fichier main.js du backend n'existe pas à l'emplacement attendu."
+              echo "❌ Erreur: Le fichier main.js du backend n'existe pas"
               ls -la apps/backend/dist/
+              exit 1
             fi
 
             # Sauvegarder la configuration PM2
