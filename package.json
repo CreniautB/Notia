@@ -16,7 +16,7 @@
     "start:frontend:prod": "cd dist/apps/frontend && next start -p 3000",
     "start:all:prod": "concurrently \"npm run start:prod\" \"npm run start:frontend:prod\"",
     "lint": "nx lint",
-    "test": "nx test",
+    "test": "nx test"
   },
   "private": true,
   "dependencies": {
