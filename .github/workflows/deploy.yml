@@ -47,8 +47,20 @@ jobs:
             git clean -fd package-lock.json || true
             echo "Local changes discarded and reset to remote master completed"
 
+            # Nettoyage complet
+            echo "=== Nettoyage complet ==="
+            rm -rf node_modules
+            rm -rf apps/frontend/node_modules
+            rm -rf apps/backend/node_modules
+            rm -rf apps/frontend/.next
+            rm -rf apps/backend/dist
+            rm -f package-lock.json
+            rm -f apps/frontend/package-lock.json
+            rm -f apps/backend/package-lock.json
+
             # Installer les dépendances
             echo "=== Installing dependencies ==="
+            npm cache clean --force
             npm install || { echo "npm install failed"; exit 1; }
 
             # Vérifier les fichiers .env
@@ -80,12 +92,22 @@ jobs:
 
             # Build
             echo "=== Building projects ==="
-            # Nettoyer les builds précédents
-            rm -rf apps/frontend/.next
-            rm -rf apps/backend/dist
+            
+            # Build du backend
+            echo "Building backend..."
+            npx nx build backend || { echo "Backend build failed"; exit 1; }
 
-            # Build des projets
-            npx nx run-many --target=build --projects=frontend,backend || { echo "Build failed"; exit 1; }
+            # Build du frontend
+            echo "Building frontend..."
+            cd apps/frontend
+            # Réinstaller next spécifiquement pour le frontend
+            npm uninstall next
+            npm install next@13.5.6
+            # Nettoyer le cache de next
+            rm -rf .next
+            # Build avec next directement
+            npm run build || { echo "Frontend build failed"; exit 1; }
+            cd ../..
 
             # Vérifier les processus PM2
             echo "=== Current PM2 processes ==="
