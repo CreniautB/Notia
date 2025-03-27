@@ -52,57 +52,47 @@ jobs:
             npm install || { echo "npm install failed"; exit 1; }
 
             # Créer le fichier .env pour le backend
-            echo "=== Création du fichier .env pour le backend ==="
-            cat > apps/backend/.env << 'EOL'
-            # Configuration de la base de données
-            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            echo "=== Vérification du fichier .env pour le backend ==="
+            if [ -f "apps/backend/.env" ]; then
+              echo "✅ Le fichier .env du backend existe déjà."
+            else
+              echo "⚠️ Le fichier .env du backend n'existe pas."
+              echo "Vous devez créer manuellement ce fichier sur le serveur."
+              echo "Chemin: /home/notia/Notia/apps/backend/.env"
+              echo "Exemple de contenu:"
+              echo "MONGODB_URI=mongodb://localhost:27017/notia"
+              echo "PORT=3001"
+              echo "NODE_ENV=production"
+              echo "..."
+              exit 1
+            fi
 
-            # Options avancées pour MongoDB
-            MONGODB_RETRY_ATTEMPTS=3
-            MONGODB_RETRY_DELAY=1000
-            MONGODB_CONNECTION_TIMEOUT=10000
-
-            # Port de l'application
-            PORT=${{ secrets.PORT }}
-
-            # Configuration de l'authentification Google OAuth
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
-
-            # Liste des emails autorisés comme administrateurs
-            ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}
-
-            # Secret pour les sessions
-            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
-
-            # URL du frontend pour les redirections
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-
-            # Autres variables d'environnement
-            NODE_ENV=${{ secrets.NODE_ENV }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            EOL
-
-            # Vérifier que MONGODB_URI n'est pas vide
+            # Vérifier que MONGODB_URI n'est pas vide dans le fichier .env
             if [ -z "$(grep -oP '(?<=MONGODB_URI=).*' apps/backend/.env)" ]; then
-              echo "❌ Erreur: MONGODB_URI est vide dans le fichier .env du backend"
-              echo "Veuillez configurer le secret MONGODB_URI dans les paramètres GitHub Actions."
+              echo "❌ Erreur: MONGODB_URI est vide ou non défini dans le fichier .env du backend"
+              echo "Veuillez éditer le fichier .env et configurer MONGODB_URI correctement."
+              echo "Commande: nano /home/notia/Notia/apps/backend/.env"
               exit 1
             fi
 
             # Créer le fichier .env pour le frontend
-            echo "=== Création du fichier .env pour le frontend ==="
-            cat > apps/frontend/.env.local << 'EOL'
-            # URL de l'API backend
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            EOL
+            echo "=== Vérification du fichier .env pour le frontend ==="
+            if [ -f "apps/frontend/.env.local" ]; then
+              echo "✅ Le fichier .env.local du frontend existe déjà."
+            else
+              echo "⚠️ Le fichier .env.local du frontend n'existe pas."
+              echo "Vous devez créer manuellement ce fichier sur le serveur."
+              echo "Chemin: /home/notia/Notia/apps/frontend/.env.local"
+              echo "Exemple de contenu:"
+              echo "NEXT_PUBLIC_API_URL=http://217.154.16.57"
+              exit 1
+            fi
 
-            # Vérifier que NEXT_PUBLIC_API_URL n'est pas vide
+            # Vérifier que NEXT_PUBLIC_API_URL n'est pas vide dans le fichier .env.local
             if [ -z "$(grep -oP '(?<=NEXT_PUBLIC_API_URL=).*' apps/frontend/.env.local)" ]; then
-              echo "❌ Erreur: NEXT_PUBLIC_API_URL est vide dans le fichier .env.local du frontend"
-              echo "Veuillez configurer le secret NEXT_PUBLIC_API_URL dans les paramètres GitHub Actions."
-              echo "Ce secret doit contenir l'URL complète de l'API, par exemple: https://notia-api.example.com"
+              echo "❌ Erreur: NEXT_PUBLIC_API_URL est vide ou non défini dans le fichier .env.local du frontend"
+              echo "Veuillez éditer le fichier .env.local et configurer NEXT_PUBLIC_API_URL correctement."
+              echo "Commande: nano /home/notia/Notia/apps/frontend/.env.local"
               exit 1
             fi
 
@@ -111,7 +101,7 @@ jobs:
             # Installer mongodb-clients si nécessaire
             which mongosh > /dev/null || sudo apt-get update && sudo apt-get install -y mongodb-clients
 
-            # Extraire l'URI de MongoDB du fichier .env
+            # Extraire l'URI de MongoDB du fichier .env local
             MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
 
             # Afficher l'URI (en masquant les informations sensibles)
@@ -120,8 +110,10 @@ jobs:
 
             # Vérifier si l'URI est valide et contient tous les éléments nécessaires
             if [[ ! "$MONGO_URI" =~ ^mongodb(\+srv)?:\/\/ ]]; then
-              echo "❌ Erreur: Format de l'URI MongoDB invalide"
+              echo "❌ Erreur: Format de l'URI MongoDB invalide dans le fichier .env local"
               echo "L'URI doit commencer par mongodb:// ou mongodb+srv://"
+              echo "Veuillez corriger le fichier .env avec la bonne URI"
+              echo "Exemple: MONGODB_URI=mongodb://localhost:27017/notia"
               exit 1
             fi
 
@@ -134,7 +126,8 @@ jobs:
               echo "❌ Erreur: Impossible de se connecter à MongoDB"
               echo "Détails de l'erreur:"
               cat mongo_test_output.txt
-              echo "Vérifiez l'URI de connexion et assurez-vous que MongoDB est accessible."
+              echo "Vérifiez l'URI de connexion dans le fichier .env et assurez-vous que MongoDB est accessible."
+              echo "Pour un déploiement en production, utilisez: MONGODB_URI=mongodb://localhost:27017/notia"
               exit 1
             fi
 
