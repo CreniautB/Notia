@@ -59,8 +59,10 @@ const nextConfig = {
         splitChunks: {
           chunks: 'all',
           minSize: 20000,
-          // Correction des configurations de splitChunks
-          // Supprimer maxSize: 0 qui cause des avertissements
+          maxSize: 244000,
+          minChunks: 1,
+          maxAsyncRequests: 30,
+          maxInitialRequests: 30,
           cacheGroups: {
             defaultVendors: {
               test: /[\\/]node_modules[\\/]/,
@@ -95,7 +97,27 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ['picsum.photos'],
+    domains: ['localhost', '217.154.16.57', 'notias.fr'],
+  },
+  // Configuration pour les assets statiques
+  assetPrefix: process.env.NODE_ENV === 'production' ? 'https://notias.fr' : '',
+  // Configuration pour le serveur de production
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
+          },
+        ],
+      },
+    ];
   },
 };
 
