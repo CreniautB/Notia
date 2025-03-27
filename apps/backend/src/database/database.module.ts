@@ -14,21 +14,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             "Variable d'environnement MONGODB_URI non définie. Impossible de se connecter à MongoDB.",
             'DatabaseModule',
           );
-          throw new Error('MONGODB_URI non définie');
+          throw new Error('MONGODB_URI is not defined in environment variables');
         }
 
-        const retryAttempts = configService.get<number>(
-          'MONGODB_RETRY_ATTEMPTS',
-          3,
-        );
-        const retryDelay = configService.get<number>(
-          'MONGODB_RETRY_DELAY',
-          1000,
-        );
-        const connectionTimeout = configService.get<number>(
-          'MONGODB_CONNECTION_TIMEOUT',
-          10000,
-        );
+        const retryAttempts = configService.get<number>('MONGODB_RETRY_ATTEMPTS', 5);
+        const retryDelay = configService.get<number>('MONGODB_RETRY_DELAY', 1000);
+        const connectionTimeout = configService.get<number>('MONGODB_CONNECTION_TIMEOUT', 10000);
 
         Logger.log(
           `Connexion à MongoDB: ${uri.replace(/\/\/.*@/, '//****:****@')}`,
@@ -37,10 +28,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
         return {
           uri,
-          autoCreate: true,
+          maxPoolSize: 10,
+          serverSelectionTimeoutMS: connectionTimeout,
+          socketTimeoutMS: connectionTimeout,
+          connectTimeoutMS: connectionTimeout,
           retryAttempts,
           retryDelay,
-          connectTimeoutMS: connectionTimeout,
+          retryWrites: true,
+          w: 'majority',
         };
       },
     }),
