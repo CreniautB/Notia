@@ -97,10 +97,10 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ['localhost', '217.154.16.57', 'notias.fr'],
+    domains: ['notias.fr', '217.154.16.57'],
   },
   // Configuration pour les assets statiques
-  assetPrefix: process.env.NODE_ENV === 'production' ? 'https://notias.fr' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? 'https://notias.fr' : undefined,
   // Configuration pour le serveur de production
   async headers() {
     return [
