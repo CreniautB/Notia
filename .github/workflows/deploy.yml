@@ -99,15 +99,7 @@ jobs:
 
             # Build du frontend
             echo "Building frontend..."
-            cd apps/frontend
-            # Réinstaller next spécifiquement pour le frontend
-            npm uninstall next
-            npm install next@13.5.6
-            # Nettoyer le cache de next
-            rm -rf .next
-            # Build avec next directement
-            npm run build || { echo "Frontend build failed"; exit 1; }
-            cd ../..
+            npx nx build frontend || { echo "Frontend build failed"; exit 1; }
 
             # Vérifier les processus PM2
             echo "=== Current PM2 processes ==="
