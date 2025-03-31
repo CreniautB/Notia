@@ -21,120 +21,125 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           debug: true
           script: |
-            echo "=== Starting deployment process ==="
+            echo "=== Démarrage du processus de déploiement ==="
 
-            # Vérifier le répertoire
+            # Fonction pour vérifier les erreurs
+            check_error() {
+              if [ $? -ne 0 ]; then
+                echo "❌ Erreur: $1"
+                exit 1
+              fi
+            }
+
+            # Vérifier et mettre à jour le répertoire
+            echo "=== Vérification du répertoire ==="
             if [ ! -d "/home/notia/Notia" ]; then
-              echo "Directory does not exist, creating..."
+              echo "Création du répertoire..."
               mkdir -p /home/notia/Notia
               cd /home/notia/Notia
               git clone https://github.com/CreniautB/notia.git .
+              check_error "Échec du clonage du dépôt"
             else
-              echo "Directory exists, proceeding with update..."
+              echo "Mise à jour du répertoire existant..."
               cd /home/notia/Notia
             fi
 
-            # Afficher la branche actuelle et le dernier commit
-            echo "=== Current branch and commit ==="
-            git branch
-            git log -1
-
-            # Forcer la mise à jour du code
-            echo "=== Forcing update to latest changes ==="
+            # Mise à jour du code
+            echo "=== Mise à jour du code ==="
             git fetch origin
-            git stash || true
             git reset --hard origin/master
-            git clean -fd package-lock.json || true
-            echo "Local changes discarded and reset to remote master completed"
+            git clean -fd
+            check_error "Échec de la mise à jour du code"
 
             # Nettoyage complet
             echo "=== Nettoyage complet ==="
             rm -rf node_modules
-            rm -rf apps/frontend/node_modules
-            rm -rf apps/backend/node_modules
+            rm -rf apps/*/node_modules
             rm -rf apps/frontend/.next
             rm -rf apps/backend/dist
             rm -f package-lock.json
-            rm -f apps/frontend/package-lock.json
-            rm -f apps/backend/package-lock.json
+            rm -f apps/*/package-lock.json
 
-            # Installer les dépendances
-            echo "=== Installing dependencies ==="
+            # Installation des dépendances
+            echo "=== Installation des dépendances ==="
             npm cache clean --force
-            npm install || { echo "npm install failed"; exit 1; }
+            npm install
+            check_error "Échec de l'installation des dépendances"
 
-            # Vérifier les fichiers .env
-            echo "=== Vérification des fichiers .env ==="
-            if [ ! -f "apps/backend/.env" ]; then
-              echo "❌ Erreur: Le fichier .env du backend n'existe pas"
-              exit 1
-            fi
+            # Vérification des fichiers de configuration
+            echo "=== Vérification des fichiers de configuration ==="
+            for file in "apps/backend/.env" "apps/frontend/.env.local"; do
+              if [ ! -f "$file" ]; then
+                echo "❌ Erreur: Le fichier $file n'existe pas"
+                exit 1
+              fi
+            done
 
-            if [ ! -f "apps/frontend/.env.local" ]; then
-              echo "❌ Erreur: Le fichier .env.local du frontend n'existe pas"
-              exit 1
-            fi
-
-            # Vérifier la connexion à MongoDB
-            echo "=== Vérification de la connexion à MongoDB ==="
+            # Vérification de MongoDB
+            echo "=== Vérification de MongoDB ==="
             MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
             if [ -z "$MONGO_URI" ]; then
               echo "❌ Erreur: MONGODB_URI n'est pas défini"
               exit 1
             fi
 
-            # Tester la connexion MongoDB
             if ! mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
               echo "❌ Erreur: Impossible de se connecter à MongoDB"
               exit 1
             fi
             echo "✅ Connexion à MongoDB réussie"
 
-            # Build
-            echo "=== Building projects ==="
+            # Build des projets
+            echo "=== Build des projets ==="
             
             # Build du backend
-            echo "Building backend..."
-            npx nx build backend || { echo "Backend build failed"; exit 1; }
+            echo "Build du backend..."
+            npx nx build backend
+            check_error "Échec du build du backend"
+
+            # Vérification du build backend
+            if [ ! -f "apps/backend/dist/main.js" ]; then
+              echo "❌ Erreur: Le fichier main.js du backend n'a pas été généré"
+              exit 1
+            fi
 
             # Build du frontend
-            echo "Building frontend..."
-            npx nx build frontend || { echo "Frontend build failed"; exit 1; }
+            echo "Build du frontend..."
+            npx nx build frontend
+            check_error "Échec du build du frontend"
 
-            # Vérifier les processus PM2
-            echo "=== Current PM2 processes ==="
-            pm2 list
+            # Vérification du build frontend
+            if [ ! -f "apps/frontend/.next/standalone/server.js" ]; then
+              echo "❌ Erreur: Le fichier server.js du frontend n'a pas été généré"
+              exit 1
+            fi
 
-            # Nettoyer les processus existants
-            echo "=== Nettoyage des processus PM2 ==="
-            pm2 delete notia-frontend 2>/dev/null || true
-            pm2 delete notia-backend 2>/dev/null || true
+            # Arrêt des services existants
+            echo "=== Arrêt des services existants ==="
+            pm2 delete notia-frontend notia-backend 2>/dev/null || true
 
             # Démarrage des services
             echo "=== Démarrage des services ==="
-            cd /home/notia/Notia
-
+            
             # Démarrage du frontend
-            echo "Starting frontend..."
-            if [ -f "apps/frontend/.next/standalone/server.js" ]; then
-              cd apps/frontend/.next/standalone
-              pm2 start server.js --name notia-frontend --env production || { echo "Frontend start failed"; exit 1; }
-            else
-              echo "❌ Erreur: Le fichier server.js du frontend n'existe pas"
-              exit 1
-            fi
+            echo "Démarrage du frontend..."
+            cd apps/frontend/.next/standalone
+            pm2 start server.js --name notia-frontend --env production
+            check_error "Échec du démarrage du frontend"
 
             # Démarrage du backend
-            echo "Starting backend..."
-            if [ -f "apps/backend/dist/main.js" ]; then
-              cd apps/backend
-              PORT=3001 NODE_ENV=production pm2 start dist/main.js --name notia-backend || { echo "Backend start failed"; exit 1; }
-            else
-              echo "❌ Erreur: Le fichier main.js du backend n'existe pas"
-              exit 1
-            fi
+            echo "Démarrage du backend..."
+            cd /home/notia/Notia/apps/backend
+            pm2 start dist/main.js --name notia-backend --env production
+            check_error "Échec du démarrage du backend"
 
-            # Sauvegarder la configuration PM2
+            # Sauvegarde de la configuration PM2
             pm2 save
 
-            echo "=== Deployment complete ==="
+            # Vérification finale
+            echo "=== Vérification finale ==="
+            sleep 5
+            pm2 list
+            pm2 logs --lines 20
+
+            echo "=== Déploiement terminé avec succès ==="
