@@ -120,18 +120,36 @@ jobs:
 
             # Démarrage des services
             echo "=== Démarrage des services ==="
-            
-            # Démarrage du frontend
-            echo "Démarrage du frontend..."
-            cd apps/frontend/.next/standalone
-            pm2 start server.js --name notia-frontend --env production
-            check_error "Échec du démarrage du frontend"
+
+            # Fonction pour vérifier si le backend est prêt
+            check_backend_ready() {
+              echo "Vérification de la disponibilité du backend..."
+              for i in {1..30}; do
+                if curl -s http://localhost:3001/api/health > /dev/null; then
+                  echo "✅ Backend prêt"
+                  return 0
+                fi
+                echo "⏳ Attente du backend... ($i/30)"
+                sleep 2
+              done
+              return 1
+            }
 
             # Démarrage du backend
             echo "Démarrage du backend..."
             cd /home/notia/Notia/apps/backend
             pm2 start dist/main.js --name notia-backend --env production
             check_error "Échec du démarrage du backend"
+
+            # Attendre que le backend soit prêt
+            check_backend_ready
+            check_error "Le backend n'est pas devenu disponible après 60 secondes"
+
+            # Démarrage du frontend
+            echo "Démarrage du frontend..."
+            cd /home/notia/Notia/apps/frontend/.next/standalone
+            pm2 start server.js --name notia-frontend --env production
+            check_error "Échec du démarrage du frontend"
 
             # Sauvegarde de la configuration PM2
             pm2 save
