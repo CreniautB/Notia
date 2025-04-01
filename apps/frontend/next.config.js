@@ -1,3 +1,5 @@
+const { composePlugins, withNx } = require('@nx/next');
+
 /** @type {import('next').NextConfig} */
 const path = require('path');
 
@@ -81,21 +83,6 @@ const nextConfig = {
 
     return config;
   },
-  async rewrites() {
-    // Choisir l'URL API en fonction de l'environnement
-    const apiBaseUrl = process.env.NODE_ENV === 'production'
-      ? process.env.NEXT_PUBLIC_API_URL || 'http://217.154.16.57'
-      : 'http://127.0.0.1:3001';
-    
-    console.log(`[Config] Environnement: ${process.env.NODE_ENV}, API URL de base: ${apiBaseUrl}`);
-    
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiBaseUrl}/api/:path*`,
-      },
-    ];
-  },
   images: {
     domains: ['notias.fr', '217.154.16.57'],
   },
@@ -122,8 +109,32 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: ['notias.fr', 'localhost:3000']
-    }
+    },
+    // Désactive la génération statique pour les routes qui nécessitent l'API
+    workerThreads: false,
+    cpus: 1
+  },
+  // Configuration des pages dynamiques
+  async generateStaticParams() {
+    return [];
+  },
+  // Force les routes à être dynamiques
+  async rewrites() {
+    return [
+      {
+        source: '/quiz/:path*',
+        destination: '/quiz/:path*',
+      },
+      {
+        source: '/quizs',
+        destination: '/quizs',
+      }
+    ];
   }
 };
 
-module.exports = nextConfig;
+const plugins = [
+  withNx,
+];
+
+module.exports = composePlugins(...plugins)(nextConfig);
