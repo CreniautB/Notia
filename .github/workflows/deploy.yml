@@ -105,7 +105,9 @@ jobs:
 
             # Build du frontend
             echo "Build du frontend..."
-            NODE_TLS_REJECT_UNAUTHORIZED=0 npx nx build frontend
+            export NODE_TLS_REJECT_UNAUTHORIZED=0
+            npx nx build frontend
+            unset NODE_TLS_REJECT_UNAUTHORIZED
             check_error "Échec du build du frontend"
 
             # Vérification du build frontend
