@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/notia
+      - GOOGLE_CLIENT_ID=17316209711-ebjpj0c4k9ptt69qjp76evqfdqh4digq.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
+      - GOOGLE_CALLBACK_URL=https://notias.fr/api/auth/google/callback
+      - ADMIN_EMAILS=creniaut.benjamin@gmail.com
+      - SESSION_SECRET=474311d581ebb2a8dee7293f4d51d15c90e2940d6766f3ebe897e2c0d093e34c
+      - FRONTEND_URL=https://notias.fr
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - notia-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://notias.fr
+    restart: unless-stopped
+    networks:
+      - notia-network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    networks:
+      - notia-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - notia-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  notia-network:
+    driver: bridge 
