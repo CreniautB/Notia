@@ -2,15 +2,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copie des fichiers de configuration
+# Copie des fichiers de configuration du monorepo
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
+COPY project.json ./
 
-# Installation des dépendances
+# Installation des dépendances à la racine
 RUN npm install
 
-# Copie du code source
+# Copie du code source complet
 COPY . .
 
 # Build de l'application
@@ -22,9 +23,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Copie des fichiers nécessaires depuis le builder
-COPY --from=builder /app/apps/frontend/.next/standalone ./
-COPY --from=builder /app/apps/frontend/.next/static ./.next/static
-COPY --from=builder /app/apps/frontend/public ./public
+COPY --from=builder /app/dist/apps/frontend/.next/standalone ./
+COPY --from=builder /app/dist/apps/frontend/.next/static ./.next/static
+COPY --from=builder /app/dist/apps/frontend/public ./public
 
 # Exposition du port
 EXPOSE 3000
