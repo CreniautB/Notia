@@ -15,7 +15,7 @@ COPY nx.json ./
 COPY tsconfig*.json ./
 
 # Installation des dépendances à la racine avec un cache plus rapide
-RUN npm ci --prefer-offline --no-audit
+RUN npm install --prefer-offline --no-audit
 
 # Copie du code source complet
 COPY . .
@@ -41,7 +41,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 
 # Installation des dépendances de production uniquement
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN npm install --only=production --prefer-offline --no-audit
 
 # Changement de propriétaire pour les fichiers
 RUN chown -R nextjs:nodejs /app
