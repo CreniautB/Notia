@@ -89,32 +89,37 @@ jobs:
             fi
             echo "✅ Connexion à MongoDB réussie"
 
-            # Build des projets
-            echo "=== Build des projets ==="
+            # Build des projets avec Nx
+            echo "=== Build des projets avec Nx ==="
             
             # Build du backend
             echo "Build du backend..."
-            npx nx build backend
+            npx nx build backend --configuration=production
             check_error "Échec du build du backend"
 
-            # Vérification du build backend
+            # Build du frontend
+            echo "Build du frontend..."
+            export NODE_TLS_REJECT_UNAUTHORIZED=0
+            npx nx build frontend --configuration=production
+            unset NODE_TLS_REJECT_UNAUTHORIZED
+            check_error "Échec du build du frontend"
+
+            # Vérification des builds
+            echo "=== Vérification des builds ==="
             if [ ! -f "apps/backend/dist/main.js" ]; then
               echo "❌ Erreur: Le fichier main.js du backend n'a pas été généré"
               exit 1
             fi
 
-            # Build du frontend
-            echo "Build du frontend..."
-            export NODE_TLS_REJECT_UNAUTHORIZED=0
-            npx nx build frontend
-            unset NODE_TLS_REJECT_UNAUTHORIZED
-            check_error "Échec du build du frontend"
-
-            # Vérification du build frontend
             if [ ! -f "apps/frontend/.next/standalone/server.js" ]; then
               echo "❌ Erreur: Le fichier server.js du frontend n'a pas été généré"
               exit 1
             fi
+
+            # Copie des fichiers statiques
+            echo "=== Copie des fichiers statiques ==="
+            cp -r apps/frontend/.next/static apps/frontend/.next/standalone/.next/
+            cp -r apps/frontend/public apps/frontend/.next/standalone/
 
             # Arrêt des services existants
             echo "=== Arrêt des services existants ==="
@@ -127,6 +132,15 @@ jobs:
 
             # Sauvegarde de la configuration PM2
             pm2 save
+
+            # Attente pour que les services démarrent
+            echo "Attente du démarrage des services..."
+            sleep 10
+
+            # Vérification des processus PM2
+            echo "Vérification des processus PM2..."
+            pm2 list
+            pm2 logs --lines 20
 
             # Configuration des permissions SSL
             echo "=== Configuration des permissions SSL ==="
@@ -145,11 +159,6 @@ jobs:
             echo "Redémarrage de Nginx..."
             sudo systemctl restart nginx
             check_error "Échec du redémarrage de Nginx"
-
-            # Vérification du statut de Nginx
-            echo "Vérification du statut de Nginx..."
-            sudo systemctl status nginx
-            check_error "Nginx n'est pas en cours d'exécution"
 
             # Vérification finale
             echo "=== Vérification finale ==="
