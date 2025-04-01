@@ -126,9 +126,15 @@ jobs:
             # Sauvegarde de la configuration PM2
             pm2 save
 
+            # Configuration des permissions SSL
+            echo "=== Configuration des permissions SSL ==="
+            sudo chown -R www-data:www-data /etc/nginx/ssl/notias.fr
+            sudo chmod -R 600 /etc/nginx/ssl/notias.fr
+            sudo chmod 755 /etc/nginx/ssl/notias.fr
+
             # Vérification de Nginx
             echo "=== Vérification de Nginx ==="
-            if ! nginx -t; then
+            if ! sudo nginx -t; then
               echo "❌ Erreur: Configuration Nginx invalide"
               exit 1
             fi
