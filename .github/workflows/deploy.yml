@@ -62,20 +62,14 @@ jobs:
 
             # Vérification des certificats SSL
             echo "=== Vérification des certificats SSL ==="
-            if [ ! -f "/etc/nginx/ssl/notias.fr/certificat.cer" ] || [ ! -f "/etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key" ]; then
-              echo "❌ Erreur: Les certificats SSL sont manquants"
+            if [ ! -f "nginx/ssl/notias.fr/certificat.cer" ] || [ ! -f "nginx/ssl/notias.fr/_.notias.fr_private_key.key" ]; then
+              echo "❌ Erreur: Les certificats SSL sont manquants dans le projet"
               exit 1
             fi
 
-            # Création des répertoires nécessaires
-            echo "=== Création des répertoires ==="
-            mkdir -p nginx/ssl/notias.fr
-            cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
-            cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
-
             # Configuration de Nginx
             echo "=== Configuration de Nginx ==="
-            # Créer le répertoire sites-available s'il n'existe pas
+            # Créer les répertoires nécessaires
             sudo mkdir -p /etc/nginx/sites-available
             sudo mkdir -p /etc/nginx/sites-enabled
             
