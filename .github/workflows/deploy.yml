@@ -33,15 +33,15 @@ jobs:
 
             # Vérifier et mettre à jour le répertoire
             echo "=== Vérification du répertoire ==="
-            if [ ! -d "/home/notia/Notia" ]; then
+            if [ ! -d "/home/benjamin/Notia" ]; then
               echo "Création du répertoire..."
-              mkdir -p /home/notia/Notia
-              cd /home/notia/Notia
+              mkdir -p /home/benjamin/Notia
+              cd /home/benjamin/Notia
               git clone https://github.com/CreniautB/notia.git .
               check_error "Échec du clonage du dépôt"
             else
               echo "Mise à jour du répertoire existant..."
-              cd /home/notia/Notia
+              cd /home/benjamin/Notia
             fi
 
             # Mise à jour du code
@@ -69,18 +69,19 @@ jobs:
 
             # Création des répertoires nécessaires
             echo "=== Création des répertoires ==="
-            mkdir -p nginx/ssl/notias.fr
-            cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
-            cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
+            sudo mkdir -p nginx/ssl/notias.fr
+            sudo cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
+            sudo cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
+            sudo chown -R $USER:$USER nginx/ssl
 
             # Configuration de Nginx
             echo "=== Configuration de Nginx ==="
-            sudo cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
-            sudo rm -f /etc/nginx/sites-enabled/notias.fr
-            sudo ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
-            sudo nginx -t
+            sudo -n cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
+            sudo -n rm -f /etc/nginx/sites-enabled/notias.fr
+            sudo -n ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
+            sudo -n nginx -t
             check_error "Configuration Nginx invalide"
-            sudo systemctl restart nginx
+            sudo -n systemctl restart nginx
             check_error "Échec du redémarrage de Nginx"
 
             # Arrêt et suppression des conteneurs existants
