@@ -69,7 +69,7 @@ jobs:
 
             # Création des répertoires et copie des certificats
             echo "=== Configuration des certificats SSL ==="
-            sudo -n mkdir -p nginx/ssl/notias.fr
+            mkdir -p nginx/ssl/notias.fr
             sudo -n cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
             sudo -n cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
             sudo -n chown -R benjamin:benjamin nginx/ssl
