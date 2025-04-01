@@ -68,7 +68,7 @@ jobs:
 
             # Vérification des fichiers de configuration
             echo "=== Vérification des fichiers de configuration ==="
-            for file in "apps/backend/.env" "apps/frontend/.env.local"; do
+            for file in "apps/backend/.env" "apps/frontend/.env.local" "ecosystem.config.js"; do
               if [ ! -f "$file" ]; then
                 echo "❌ Erreur: Le fichier $file n'existe pas"
                 exit 1
@@ -116,48 +116,42 @@ jobs:
 
             # Arrêt des services existants
             echo "=== Arrêt des services existants ==="
-            pm2 delete notia-frontend notia-backend 2>/dev/null || true
+            pm2 delete all 2>/dev/null || true
 
-            # Démarrage des services
-            echo "=== Démarrage des services ==="
-
-            # Fonction pour vérifier si le backend est prêt
-            check_backend_ready() {
-              echo "Vérification de la disponibilité du backend..."
-              for i in {1..30}; do
-                if curl -s http://localhost:3001/api/health > /dev/null; then
-                  echo "✅ Backend prêt"
-                  return 0
-                fi
-                echo "⏳ Attente du backend... ($i/30)"
-                sleep 2
-              done
-              return 1
-            }
-
-            # Démarrage du backend
-            echo "Démarrage du backend..."
-            cd /home/notia/Notia/apps/backend
-            pm2 start dist/main.js --name notia-backend --env production
-            check_error "Échec du démarrage du backend"
-
-            # Attendre que le backend soit prêt
-            check_backend_ready
-            check_error "Le backend n'est pas devenu disponible après 60 secondes"
-
-            # Démarrage du frontend
-            echo "Démarrage du frontend..."
-            cd /home/notia/Notia/apps/frontend/.next/standalone
-            pm2 start server.js --name notia-frontend --env production
-            check_error "Échec du démarrage du frontend"
+            # Démarrage des services avec PM2
+            echo "=== Démarrage des services avec PM2 ==="
+            pm2 start ecosystem.config.js
+            check_error "Échec du démarrage des services"
 
             # Sauvegarde de la configuration PM2
             pm2 save
+
+            # Vérification de Nginx
+            echo "=== Vérification de Nginx ==="
+            if ! nginx -t; then
+              echo "❌ Erreur: Configuration Nginx invalide"
+              exit 1
+            fi
+
+            # Redémarrage de Nginx
+            echo "Redémarrage de Nginx..."
+            sudo systemctl restart nginx
+            check_error "Échec du redémarrage de Nginx"
+
+            # Vérification du statut de Nginx
+            echo "Vérification du statut de Nginx..."
+            sudo systemctl status nginx
+            check_error "Nginx n'est pas en cours d'exécution"
 
             # Vérification finale
             echo "=== Vérification finale ==="
             sleep 5
             pm2 list
             pm2 logs --lines 20
+
+            # Vérification des ports
+            echo "Vérification des ports..."
+            netstat -tulpn | grep -E ':3000|:3001'
+            check_error "Les ports 3000 et 3001 ne sont pas en écoute"
 
             echo "=== Déploiement terminé avec succès ==="
