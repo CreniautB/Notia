@@ -24,9 +24,7 @@ WORKDIR /app
 # Copie des fichiers nécessaires depuis le builder
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/package*.json ./
-
-# Installation des dépendances de production uniquement
-RUN npm install --production
+COPY --from=builder /app/node_modules ./node_modules
 
 # Exposition du port
 EXPOSE 3001
