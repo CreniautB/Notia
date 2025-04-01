@@ -53,7 +53,7 @@ jobs:
 
             # Vérification des fichiers de configuration
             echo "=== Vérification des fichiers de configuration ==="
-            for file in "docker-compose.yml" "apps/backend/Dockerfile" "apps/frontend/Dockerfile" "nginx/conf.d/default.conf"; do
+            for file in "docker-compose.yml" "apps/backend/Dockerfile" "apps/frontend/Dockerfile" "nginx/notias.fr"; do
               if [ ! -f "$file" ]; then
                 echo "❌ Erreur: Le fichier $file n'existe pas"
                 exit 1
@@ -62,7 +62,7 @@ jobs:
 
             # Vérification des certificats SSL
             echo "=== Vérification des certificats SSL ==="
-            if [ ! -f "/etc/letsencrypt/live/notias.fr/certificat.cer" ] || [ ! -f "/etc/letsencrypt/live/notias.fr/_.notias.fr_private_key.key" ]; then
+            if [ ! -f "/etc/nginx/ssl/notias.fr/certificat.cer" ] || [ ! -f "/etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key" ]; then
               echo "❌ Erreur: Les certificats SSL sont manquants"
               exit 1
             fi
@@ -70,8 +70,18 @@ jobs:
             # Création des répertoires nécessaires
             echo "=== Création des répertoires ==="
             mkdir -p nginx/ssl/notias.fr
-            cp /etc/letsencrypt/live/notias.fr/certificat.cer nginx/ssl/notias.fr/
-            cp /etc/letsencrypt/live/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
+            cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
+            cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
+
+            # Configuration de Nginx
+            echo "=== Configuration de Nginx ==="
+            sudo cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
+            sudo rm -f /etc/nginx/sites-enabled/notias.fr
+            sudo ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
+            sudo nginx -t
+            check_error "Configuration Nginx invalide"
+            sudo systemctl restart nginx
+            check_error "Échec du redémarrage de Nginx"
 
             # Arrêt et suppression des conteneurs existants
             echo "=== Nettoyage des conteneurs existants ==="
