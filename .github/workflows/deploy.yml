@@ -62,7 +62,7 @@ jobs:
 
             # Vérification des certificats SSL
             echo "=== Vérification des certificats SSL ==="
-            if [ ! -f "/etc/letsencrypt/live/notias.fr/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/notias.fr/privkey.pem" ]; then
+            if [ ! -f "/etc/letsencrypt/live/notias.fr/certificat.cer" ] || [ ! -f "/etc/letsencrypt/live/notias.fr/_.notias.fr_private_key.key" ]; then
               echo "❌ Erreur: Les certificats SSL sont manquants"
               exit 1
             fi
@@ -70,8 +70,8 @@ jobs:
             # Création des répertoires nécessaires
             echo "=== Création des répertoires ==="
             mkdir -p nginx/ssl/notias.fr
-            cp /etc/letsencrypt/live/notias.fr/fullchain.pem nginx/ssl/notias.fr/
-            cp /etc/letsencrypt/live/notias.fr/privkey.pem nginx/ssl/notias.fr/
+            cp /etc/letsencrypt/live/notias.fr/certificat.cer nginx/ssl/notias.fr/
+            cp /etc/letsencrypt/live/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
 
             # Arrêt et suppression des conteneurs existants
             echo "=== Nettoyage des conteneurs existants ==="
