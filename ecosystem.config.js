@@ -20,12 +20,14 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NEXT_PUBLIC_API_URL: 'https://notias.fr'
+        NEXT_PUBLIC_API_URL: 'https://notias.fr',
+        NODE_TLS_REJECT_UNAUTHORIZED: '0'
       },
       watch: false,
       instances: 1,
       autorestart: true,
-      max_memory_restart: '1G'
+      max_memory_restart: '1G',
+      exp_backoff_restart_delay: 100
     }
   ]
 }; 
