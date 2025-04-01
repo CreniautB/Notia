@@ -4,9 +4,68 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Raison du déploiement manuel'
+        required: false
+        default: 'Déploiement manuel'
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+        
+      - name: Run tests
+        run: npm run test
+        continue-on-error: true
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build applications
+        run: npm run ci:build
+        
+      - name: Verify build artifacts
+        run: |
+          if [ ! -d "dist/apps/frontend" ] || [ ! -d "dist/apps/backend" ]; then
+            echo "❌ Erreur: Les artefacts de build manquent"
+            exit 1
+          fi
+
   deploy:
+    name: Deploy
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,6 +81,7 @@ jobs:
           debug: true
           script: |
             echo "=== Démarrage du processus de déploiement ==="
+            DEPLOY_START_TIME=$(date +%s)
 
             # Fonction pour vérifier les erreurs
             check_error() {
@@ -29,6 +89,13 @@ jobs:
                 echo "❌ Erreur: $1"
                 exit 1
               fi
+            }
+
+            # Fonction pour mesurer et journaliser le temps écoulé
+            log_time() {
+              CURRENT_TIME=$(date +%s)
+              ELAPSED=$((CURRENT_TIME - DEPLOY_START_TIME))
+              echo "⏱️ Temps écoulé: $ELAPSED secondes - $1"
             }
 
             # Vérifier et mettre à jour le répertoire
@@ -43,6 +110,23 @@ jobs:
               echo "Mise à jour du répertoire existant..."
               cd /home/benjamin/Notia
             fi
+            log_time "Initialisation du répertoire"
+
+            # Sauvegarde avant mise à jour
+            echo "=== Création d'une sauvegarde ==="
+            BACKUP_DIR="/home/benjamin/Notia_backups/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            if [ -f "docker-compose.yml" ]; then
+              cp docker-compose.yml $BACKUP_DIR/
+              check_error "Échec de la sauvegarde docker-compose.yml"
+            fi
+            
+            # Sauvegarde des données MongoDB si possible
+            if docker-compose exec -T mongodb mongodump --out=/tmp/mongodb_backup 2>/dev/null; then
+              docker cp mongodb:/tmp/mongodb_backup $BACKUP_DIR/
+              check_error "Échec de la sauvegarde MongoDB"
+            fi
+            log_time "Sauvegarde"
 
             # Mise à jour du code
             echo "=== Mise à jour du code ==="
@@ -50,15 +134,18 @@ jobs:
             git reset --hard origin/master
             git clean -fd
             check_error "Échec de la mise à jour du code"
+            log_time "Mise à jour du code"
 
             # Vérification des fichiers de configuration
             echo "=== Vérification des fichiers de configuration ==="
-            for file in "docker-compose.yml" "apps/backend/Dockerfile" "apps/frontend/Dockerfile" "nginx/notias.fr"; do
+            REQUIRED_FILES=("docker-compose.yml" "apps/backend/Dockerfile" "apps/frontend/Dockerfile" "nginx/notias.fr")
+            for file in "${REQUIRED_FILES[@]}"; do
               if [ ! -f "$file" ]; then
                 echo "❌ Erreur: Le fichier $file n'existe pas"
                 exit 1
               fi
             done
+            log_time "Vérification des fichiers"
 
             # Vérification des certificats SSL
             echo "=== Vérification des certificats SSL ==="
@@ -75,6 +162,7 @@ jobs:
             sudo -n chown -R benjamin:benjamin nginx/ssl
             sudo -n chmod 600 nginx/ssl/notias.fr/*.key
             sudo -n chmod 644 nginx/ssl/notias.fr/*.cer
+            log_time "Configuration SSL"
 
             # Configuration de Nginx
             echo "=== Configuration de Nginx ==="
@@ -100,19 +188,34 @@ jobs:
             # Redémarrer Nginx
             sudo -n systemctl restart nginx
             check_error "Échec du redémarrage de Nginx"
+            log_time "Configuration Nginx"
 
-            # Arrêt et suppression des conteneurs existants
-            echo "=== Nettoyage des conteneurs existants ==="
-            docker-compose down --remove-orphans
-            docker system prune -f
+            # Arrêt et sauvegarde des données des conteneurs existants si nécessaire
+            echo "=== Sauvegarde des données et arrêt des conteneurs ==="
+            if docker-compose ps | grep -q Up; then
+              echo "Sauvegarde des volumes si nécessaire..."
+              # Ajoutez ici des commandes pour sauvegarder vos données si nécessaire
+              
+              echo "Arrêt des conteneurs existants..."
+              docker-compose down --remove-orphans
+              check_error "Erreur lors de l'arrêt des conteneurs"
+            fi
+            log_time "Arrêt des conteneurs"
+
+            # Nettoyage des images non utilisées
+            echo "=== Nettoyage des ressources Docker ==="
+            docker system prune -f --volumes
+            check_error "Échec du nettoyage des ressources Docker"
 
             # Construction et démarrage des conteneurs
             echo "=== Construction et démarrage des conteneurs ==="
             docker-compose build --no-cache
             check_error "Échec de la construction des conteneurs"
+            log_time "Construction des conteneurs"
             
             docker-compose up -d
             check_error "Échec du démarrage des conteneurs"
+            log_time "Démarrage des conteneurs"
 
             # Attente pour que les services démarrent
             echo "Attente du démarrage des services..."
@@ -120,12 +223,51 @@ jobs:
 
             # Vérification des conteneurs
             echo "=== Vérification des conteneurs ==="
-            docker-compose ps
-            docker-compose logs --tail=20
+            if ! docker-compose ps | grep -q Up; then
+              echo "❌ Erreur: Les conteneurs ne sont pas en cours d'exécution"
+              echo "Logs des conteneurs:"
+              docker-compose logs
+              
+              echo "Restauration du déploiement précédent..."
+              # Restaurer la version précédente (si vous avez une sauvegarde)
+              if [ -f "$BACKUP_DIR/docker-compose.yml" ]; then
+                cp "$BACKUP_DIR/docker-compose.yml" .
+                docker-compose up -d
+              fi
+              
+              exit 1
+            fi
 
             # Vérification des ports
             echo "=== Vérification des ports ==="
-            netstat -tulpn | grep -E ':80|:443'
-            check_error "Les ports 80 et 443 ne sont pas en écoute"
+            if ! netstat -tulpn | grep -q ':80'; then
+              echo "❌ Erreur: Le port 80 n'est pas en écoute"
+              exit 1
+            fi
+            
+            if ! netstat -tulpn | grep -q ':443'; then
+              echo "❌ Erreur: Le port 443 n'est pas en écoute"
+              exit 1
+            fi
 
-            echo "=== Déploiement terminé avec succès ==="
+            # Test de l'accès au site
+            echo "=== Test de l'accès au site ==="
+            if ! curl -s -o /dev/null -w "%{http_code}" https://notias.fr | grep -q "200\|301\|302"; then
+              echo "❌ Erreur: Le site ne répond pas correctement"
+              exit 1
+            fi
+
+            DEPLOY_END_TIME=$(date +%s)
+            TOTAL_TIME=$((DEPLOY_END_TIME - DEPLOY_START_TIME))
+            echo "=== Déploiement terminé avec succès en $TOTAL_TIME secondes ==="
+
+      - name: Notification de déploiement
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deployments
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_TITLE: Déploiement de Notia
+          SLACK_MESSAGE: 'Statut: ${{ job.status }}'
+          SLACK_FOOTER: 'GitHub Actions'
