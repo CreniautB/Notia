@@ -51,124 +51,63 @@ jobs:
             git clean -fd
             check_error "Échec de la mise à jour du code"
 
-            # Nettoyage complet
-            echo "=== Nettoyage complet ==="
-            rm -rf node_modules
-            rm -rf apps/*/node_modules
-            rm -rf apps/frontend/.next
-            rm -rf apps/backend/dist
-            rm -f package-lock.json
-            rm -f apps/*/package-lock.json
-
-            # Installation des dépendances
-            echo "=== Installation des dépendances ==="
-            npm cache clean --force
-            npm install
-            check_error "Échec de l'installation des dépendances"
-
             # Vérification des fichiers de configuration
             echo "=== Vérification des fichiers de configuration ==="
-            for file in "apps/backend/.env" "apps/frontend/.env.local" "ecosystem.config.js"; do
+            for file in "docker-compose.yml" "apps/backend/Dockerfile" "apps/frontend/Dockerfile" "nginx/notias.fr"; do
               if [ ! -f "$file" ]; then
                 echo "❌ Erreur: Le fichier $file n'existe pas"
                 exit 1
               fi
             done
 
-            # Vérification de MongoDB
-            echo "=== Vérification de MongoDB ==="
-            MONGO_URI=$(grep MONGODB_URI apps/backend/.env | cut -d '=' -f2)
-            if [ -z "$MONGO_URI" ]; then
-              echo "❌ Erreur: MONGODB_URI n'est pas défini"
+            # Vérification des certificats SSL
+            echo "=== Vérification des certificats SSL ==="
+            if [ ! -f "/etc/nginx/ssl/notias.fr/certificat.cer" ] || [ ! -f "/etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key" ]; then
+              echo "❌ Erreur: Les certificats SSL sont manquants"
               exit 1
             fi
 
-            if ! mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
-              echo "❌ Erreur: Impossible de se connecter à MongoDB"
-              exit 1
-            fi
-            echo "✅ Connexion à MongoDB réussie"
+            # Création des répertoires nécessaires
+            echo "=== Création des répertoires ==="
+            mkdir -p nginx/ssl/notias.fr
+            cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
+            cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
 
-            # Build des projets avec Nx
-            echo "=== Build des projets avec Nx ==="
+            # Configuration de Nginx
+            echo "=== Configuration de Nginx ==="
+            sudo cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
+            sudo rm -f /etc/nginx/sites-enabled/notias.fr
+            sudo ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
+            sudo nginx -t
+            check_error "Configuration Nginx invalide"
+            sudo systemctl restart nginx
+            check_error "Échec du redémarrage de Nginx"
+
+            # Arrêt et suppression des conteneurs existants
+            echo "=== Nettoyage des conteneurs existants ==="
+            docker-compose down --remove-orphans
+            docker system prune -f
+
+            # Construction et démarrage des conteneurs
+            echo "=== Construction et démarrage des conteneurs ==="
+            docker-compose build --no-cache
+            check_error "Échec de la construction des conteneurs"
             
-            # Build du backend
-            echo "Build du backend..."
-            npx nx build backend --configuration=production
-            check_error "Échec du build du backend"
-
-            # Build du frontend
-            echo "Build du frontend..."
-            export NODE_TLS_REJECT_UNAUTHORIZED=0
-            npx nx build frontend --configuration=production
-            unset NODE_TLS_REJECT_UNAUTHORIZED
-            check_error "Échec du build du frontend"
-
-            # Vérification des builds
-            echo "=== Vérification des builds ==="
-            if [ ! -f "apps/backend/dist/main.js" ]; then
-              echo "❌ Erreur: Le fichier main.js du backend n'a pas été généré"
-              exit 1
-            fi
-
-            if [ ! -f "apps/frontend/.next/standalone/server.js" ]; then
-              echo "❌ Erreur: Le fichier server.js du frontend n'a pas été généré"
-              exit 1
-            fi
-
-            # Copie des fichiers statiques
-            echo "=== Copie des fichiers statiques ==="
-            cp -r apps/frontend/.next/static apps/frontend/.next/standalone/.next/
-            cp -r apps/frontend/public apps/frontend/.next/standalone/
-
-            # Arrêt des services existants
-            echo "=== Arrêt des services existants ==="
-            pm2 delete all 2>/dev/null || true
-
-            # Démarrage des services avec PM2
-            echo "=== Démarrage des services avec PM2 ==="
-            pm2 start ecosystem.config.js
-            check_error "Échec du démarrage des services"
-
-            # Sauvegarde de la configuration PM2
-            pm2 save
+            docker-compose up -d
+            check_error "Échec du démarrage des conteneurs"
 
             # Attente pour que les services démarrent
             echo "Attente du démarrage des services..."
             sleep 10
 
-            # Vérification des processus PM2
-            echo "Vérification des processus PM2..."
-            pm2 list
-            pm2 logs --lines 20
-
-            # Configuration des permissions SSL
-            echo "=== Configuration des permissions SSL ==="
-            sudo chown -R www-data:www-data /etc/nginx/ssl/notias.fr
-            sudo chmod -R 600 /etc/nginx/ssl/notias.fr
-            sudo chmod 755 /etc/nginx/ssl/notias.fr
-
-            # Vérification de Nginx
-            echo "=== Vérification de Nginx ==="
-            if ! sudo nginx -t; then
-              echo "❌ Erreur: Configuration Nginx invalide"
-              exit 1
-            fi
-
-            # Redémarrage de Nginx
-            echo "Redémarrage de Nginx..."
-            sudo systemctl restart nginx
-            check_error "Échec du redémarrage de Nginx"
-
-            # Vérification finale
-            echo "=== Vérification finale ==="
-            sleep 5
-            pm2 list
-            pm2 logs --lines 20
+            # Vérification des conteneurs
+            echo "=== Vérification des conteneurs ==="
+            docker-compose ps
+            docker-compose logs --tail=20
 
             # Vérification des ports
-            echo "Vérification des ports..."
-            netstat -tulpn | grep -E ':3000|:3001'
-            check_error "Les ports 3000 et 3001 ne sont pas en écoute"
+            echo "=== Vérification des ports ==="
+            netstat -tulpn | grep -E ':80|:443'
+            check_error "Les ports 80 et 443 ne sont pas en écoute"
 
             echo "=== Déploiement terminé avec succès ==="
