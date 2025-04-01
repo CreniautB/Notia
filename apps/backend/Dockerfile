@@ -7,12 +7,13 @@ ENV NX_DAEMON=false
 ENV NODE_ENV=production
 
 # Copie des fichiers de configuration du monorepo
-COPY package*.json ./
+COPY package.json ./
+COPY package-lock.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
 
 # Installation des dépendances à la racine
-RUN npm ci
+RUN npm install --frozen-lockfile
 
 # Copie du code source complet
 COPY . .
@@ -33,7 +34,7 @@ COPY --from=builder /app/dist/apps/backend ./dist
 COPY --from=builder /app/package.json ./
 
 # Installation des dépendances de production
-RUN npm ci --omit=dev
+RUN npm install --omit=dev --frozen-lockfile
 
 # Exposition du port
 EXPOSE 3001
