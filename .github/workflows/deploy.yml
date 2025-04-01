@@ -69,36 +69,36 @@ jobs:
 
             # Création des répertoires et copie des certificats
             echo "=== Configuration des certificats SSL ==="
-            sudo mkdir -p nginx/ssl/notias.fr
-            sudo cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
-            sudo cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
-            sudo chown -R benjamin:benjamin nginx/ssl
-            sudo chmod 600 nginx/ssl/notias.fr/*.key
-            sudo chmod 644 nginx/ssl/notias.fr/*.cer
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S mkdir -p nginx/ssl/notias.fr
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S cp /etc/nginx/ssl/notias.fr/certificat.cer nginx/ssl/notias.fr/
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S cp /etc/nginx/ssl/notias.fr/_.notias.fr_private_key.key nginx/ssl/notias.fr/
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S chown -R benjamin:benjamin nginx/ssl
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S chmod 600 nginx/ssl/notias.fr/*.key
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S chmod 644 nginx/ssl/notias.fr/*.cer
 
             # Configuration de Nginx
             echo "=== Configuration de Nginx ==="
             # Créer les répertoires nécessaires
-            sudo mkdir -p /etc/nginx/sites-available
-            sudo mkdir -p /etc/nginx/sites-enabled
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S mkdir -p /etc/nginx/sites-available
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S mkdir -p /etc/nginx/sites-enabled
             
             # Copier la configuration
-            sudo cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
             
             # Supprimer l'ancien lien symbolique s'il existe
             if [ -L "/etc/nginx/sites-enabled/notias.fr" ]; then
-              sudo rm /etc/nginx/sites-enabled/notias.fr
+              echo ${{ secrets.SUDO_PASSWORD }} | sudo -S rm /etc/nginx/sites-enabled/notias.fr
             fi
             
             # Créer le nouveau lien symbolique
-            sudo ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
             
             # Tester la configuration
-            sudo nginx -t
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S nginx -t
             check_error "Configuration Nginx invalide"
             
             # Redémarrer Nginx
-            sudo systemctl restart nginx
+            echo ${{ secrets.SUDO_PASSWORD }} | sudo -S systemctl restart nginx
             check_error "Échec du redémarrage de Nginx"
 
             # Arrêt et suppression des conteneurs existants
