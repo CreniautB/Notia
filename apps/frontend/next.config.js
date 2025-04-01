@@ -120,10 +120,9 @@ const nextConfig = {
     ];
   },
   experimental: {
-    serverActions: true,
-  },
-  env: {
-    NODE_TLS_REJECT_UNAUTHORIZED: "0"
+    serverActions: {
+      allowedOrigins: ['notias.fr', 'localhost:3000']
+    }
   }
 };
 
