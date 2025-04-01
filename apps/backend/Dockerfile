@@ -3,7 +3,6 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Configuration de l'environnement
-ENV NX_DAEMON=false
 ENV NODE_ENV=production
 
 # Copie des fichiers de configuration du monorepo
@@ -21,17 +20,15 @@ COPY . .
 # Build de l'application
 RUN npx nx build backend --configuration=production
 
-# Génération du package.json de production avec le démon désactivé
-RUN NODE_ENV=production npx nx generate-package-json backend --project=backend
-
 # Image de production
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
 # Copie des fichiers nécessaires depuis le builder
-COPY --from=builder /app/dist/apps/backend ./dist
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/dist/apps/backend ./
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
 
 # Installation des dépendances de production
 RUN npm install --omit=dev --frozen-lockfile
@@ -40,4 +37,4 @@ RUN npm install --omit=dev --frozen-lockfile
 EXPOSE 3001
 
 # Démarrage de l'application
-CMD ["node", "dist/main.js"]
+CMD ["node", "main.js"]
