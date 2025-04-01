@@ -6,7 +6,6 @@ WORKDIR /app
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
-COPY project.json ./
 
 # Installation des dépendances à la racine
 RUN npm install
