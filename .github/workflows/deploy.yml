@@ -160,9 +160,19 @@ jobs:
             
             # Construction et démarrage des conteneurs
             echo "=== Construction et démarrage des conteneurs ==="
+            
+            # Vérifier le contenu des fichiers Dockerfile
+            echo "=== Contenu du Dockerfile backend ==="
+            cat ./apps/backend/Dockerfile
+            
+            # Vérifier le contenu du package.json du backend
+            echo "=== Contenu du package.json backend ==="
+            cat ./apps/backend/package.json
+            
             # Construire le conteneur backend
             echo "Construction du backend..."
-            docker-compose build --no-cache backend
+            # Utiliser --progress=plain pour afficher les logs détaillés du build
+            docker-compose build --no-cache --progress=plain backend
             check_error "Échec de la construction du backend"
             
             # Construire le conteneur frontend
