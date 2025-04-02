@@ -1,4 +1,14 @@
-const { composePlugins, withNx } = require('@nx/next');
+// Gestion de l'absence de @nx/next dans certains environnements (comme Docker)
+let withNx = (config) => config;
+let composePlugins = (plugin) => plugin;
+
+try {
+  const nx = require('@nx/next');
+  withNx = nx.withNx;
+  composePlugins = nx.composePlugins;
+} catch (error) {
+  console.warn("@nx/next n'est pas disponible, utilisation d'une configuration simple");
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -38,4 +48,5 @@ const nextConfig = {
   },
 };
 
-module.exports = composePlugins(withNx)(nextConfig);
+// Exporter la configuration avec ou sans Nx
+module.exports = process.env.USE_NX ? composePlugins(withNx)(nextConfig) : nextConfig;
