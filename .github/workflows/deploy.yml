@@ -12,40 +12,8 @@ on:
         default: 'Déploiement manuel'
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Skip Tests
-        run: echo "Tests skipped for now due to dependency issues"
-
-  build:
-    name: Build
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Skip Build
-        run: echo "Build skipped for now due to dependency issues"
-
   deploy:
-    name: Deploy
-    needs: [test]
+    name: Deploy to VPS
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -103,7 +71,7 @@ jobs:
             
             # Sauvegarde des données MongoDB si possible
             if docker-compose exec -T mongodb mongodump --out=/tmp/mongodb_backup 2>/dev/null; then
-              docker cp mongodb:/tmp/mongodb_backup $BACKUP_DIR/
+              docker cp $(docker-compose ps -q mongodb):/tmp/mongodb_backup $BACKUP_DIR/
               check_error "Échec de la sauvegarde MongoDB"
             fi
             log_time "Sauvegarde"
