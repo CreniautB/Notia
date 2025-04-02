@@ -16,9 +16,13 @@ COPY package-lock.json ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
 COPY tsconfig.json ./
+COPY .npmrc ./
 
 # Installation des dépendances
 RUN npm install --legacy-peer-deps
+
+# Installation globale de Nx CLI
+RUN npm install -g nx@16.6.0
 
 # Forcer l'utilisation de Next.js 14.0.0
 RUN npm install next@14.0.0 --save-exact --legacy-peer-deps
@@ -30,7 +34,7 @@ COPY . .
 RUN npx rimraf ./apps/frontend/.next ./apps/frontend/node_modules/.cache
 
 # Build de l'application avec débogage et plus de mémoire
-RUN NODE_OPTIONS="--max_old_space_size=4096" npx nx build frontend --verbose
+RUN NODE_OPTIONS="--max_old_space_size=4096" nx build frontend --verbose
 
 # Image de production
 FROM node:20-alpine AS runner

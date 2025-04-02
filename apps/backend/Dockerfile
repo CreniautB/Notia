@@ -5,7 +5,7 @@ WORKDIR /app
 # Configuration de l'environnement
 ENV NODE_ENV=production
 
-# Installation des dépendances globales nécessaires (si besoin)
+# Installation des dépendances globales nécessaires
 RUN apk add --no-cache python3 make g++
 
 # Copie des fichiers de configuration du monorepo
@@ -13,15 +13,19 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
+COPY .npmrc ./
 
-# Installation des dépendances à la racine avec un cache plus rapide
+# Installation des dépendances à la racine
 RUN npm install --prefer-offline --no-audit --legacy-peer-deps
+
+# Installation globale de Nx CLI
+RUN npm install -g nx@16.6.0
 
 # Copie du code source complet
 COPY . .
 
 # Build de l'application avec optimisation
-RUN NODE_OPTIONS="--max_old_space_size=4096" npx nx build backend --configuration=production --skip-nx-cache
+RUN nx build backend --configuration=production --skip-nx-cache
 
 # Image de production
 FROM node:20-alpine AS runner
@@ -39,6 +43,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/dist/apps/backend ./
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/.npmrc ./.npmrc
 
 # Installation des dépendances de production uniquement
 RUN npm install --only=production --prefer-offline --no-audit --legacy-peer-deps

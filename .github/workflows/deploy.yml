@@ -144,10 +144,24 @@ jobs:
 
             # Construction et démarrage des conteneurs
             echo "=== Construction et démarrage des conteneurs ==="
+            # Construire le conteneur backend
+            echo "Construction du backend..."
+            docker-compose build --no-cache backend
+            check_error "Échec de la construction du backend"
+            
+            # Construire le conteneur frontend
+            echo "Construction du frontend..."
+            docker-compose build --no-cache frontend
+            check_error "Échec de la construction du frontend"
+            
+            # Construire les autres services
+            echo "Construction des autres services..."
             docker-compose build --no-cache
             check_error "Échec de la construction des conteneurs"
             log_time "Construction des conteneurs"
             
+            # Démarrer les conteneurs
+            echo "Démarrage des conteneurs..."
             docker-compose up -d
             check_error "Échec du démarrage des conteneurs"
             log_time "Démarrage des conteneurs"
