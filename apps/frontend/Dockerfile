@@ -75,9 +75,13 @@ RUN echo '/// <reference types="next" />' > next-env.d.ts && \
     echo '// NOTE: This file should not be edited' >> next-env.d.ts && \
     echo '// see https://nextjs.org/docs/basic-features/typescript for more information.' >> next-env.d.ts
 
+# Créer le répertoire public
+RUN mkdir -p ./public
+
 # Copier le code source du frontend
 COPY apps/frontend/src ./src
-COPY apps/frontend/public ./public || mkdir -p ./public
+# Essayer de copier le répertoire public s'il existe
+COPY apps/frontend/public ./public 2>/dev/null || true
 
 # Installation des dépendances
 RUN npm install --legacy-peer-deps
@@ -115,7 +119,7 @@ ENV NEXT_PRIVATE_STANDALONE=true
 # Copie des fichiers nécessaires
 COPY --from=builder /app/frontend/.next/standalone ./
 COPY --from=builder /app/frontend/.next/static ./.next/static
-COPY --from=builder /app/frontend/public ./public || mkdir -p ./public
+COPY --from=builder /app/frontend/public ./public
 
 # Exposition du port
 EXPOSE 3000
