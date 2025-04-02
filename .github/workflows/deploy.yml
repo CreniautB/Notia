@@ -70,9 +70,22 @@ jobs:
             fi
             
             # Sauvegarde des données MongoDB si possible
-            if docker-compose exec -T mongodb mongodump --out=/tmp/mongodb_backup 2>/dev/null; then
-              docker cp $(docker-compose ps -q mongodb):/tmp/mongodb_backup $BACKUP_DIR/
-              check_error "Échec de la sauvegarde MongoDB"
+            echo "Tentative de sauvegarde MongoDB..."
+            if docker-compose ps | grep -q "mongodb.*Up"; then
+              # MongoDB est en cours d'exécution, tentative de sauvegarde
+              if docker-compose exec -T mongodb mongodump --out=/tmp/mongodb_backup 2>/dev/null; then
+                MONGODB_CONTAINER=$(docker-compose ps -q mongodb)
+                if [ ! -z "$MONGODB_CONTAINER" ]; then
+                  docker cp $MONGODB_CONTAINER:/tmp/mongodb_backup $BACKUP_DIR/
+                  echo "✅ Sauvegarde MongoDB réussie dans $BACKUP_DIR/mongodb_backup"
+                else
+                  echo "⚠️ Avertissement: Conteneur MongoDB non trouvé, sauvegarde ignorée"
+                fi
+              else
+                echo "⚠️ Avertissement: Échec de la sauvegarde MongoDB, poursuite du déploiement"
+              fi
+            else
+              echo "⚠️ Avertissement: MongoDB n'est pas en cours d'exécution, sauvegarde ignorée"
             fi
             log_time "Sauvegarde"
 
@@ -112,32 +125,6 @@ jobs:
             sudo -n chmod 644 nginx/ssl/notias.fr/*.cer
             log_time "Configuration SSL"
 
-            # Configuration de Nginx
-            echo "=== Configuration de Nginx ==="
-            # Créer les répertoires nécessaires
-            sudo -n mkdir -p /etc/nginx/sites-available
-            sudo -n mkdir -p /etc/nginx/sites-enabled
-            
-            # Copier la configuration
-            sudo -n cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
-            
-            # Supprimer l'ancien lien symbolique s'il existe
-            if [ -L "/etc/nginx/sites-enabled/notias.fr" ]; then
-              sudo -n rm /etc/nginx/sites-enabled/notias.fr
-            fi
-            
-            # Créer le nouveau lien symbolique
-            sudo -n ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
-            
-            # Tester la configuration
-            sudo -n nginx -t
-            check_error "Configuration Nginx invalide"
-            
-            # Redémarrer Nginx
-            sudo -n systemctl restart nginx
-            check_error "Échec du redémarrage de Nginx"
-            log_time "Configuration Nginx"
-
             # Arrêt et sauvegarde des données des conteneurs existants si nécessaire
             echo "=== Sauvegarde des données et arrêt des conteneurs ==="
             if docker-compose ps | grep -q Up; then
@@ -168,6 +155,32 @@ jobs:
             # Attente pour que les services démarrent
             echo "Attente du démarrage des services..."
             sleep 10
+
+            # Configuration de Nginx - APRÈS le démarrage des conteneurs
+            echo "=== Configuration de Nginx ==="
+            # Créer les répertoires nécessaires
+            sudo -n mkdir -p /etc/nginx/sites-available
+            sudo -n mkdir -p /etc/nginx/sites-enabled
+            
+            # Copier la configuration
+            sudo -n cp nginx/notias.fr /etc/nginx/sites-available/notias.fr
+            
+            # Supprimer l'ancien lien symbolique s'il existe
+            if [ -L "/etc/nginx/sites-enabled/notias.fr" ]; then
+              sudo -n rm /etc/nginx/sites-enabled/notias.fr
+            fi
+            
+            # Créer le nouveau lien symbolique
+            sudo -n ln -s /etc/nginx/sites-available/notias.fr /etc/nginx/sites-enabled/
+            
+            # Tester la configuration
+            sudo -n nginx -t
+            check_error "Configuration Nginx invalide"
+            
+            # Redémarrer Nginx
+            sudo -n systemctl restart nginx
+            check_error "Échec du redémarrage de Nginx"
+            log_time "Configuration Nginx"
 
             # Vérification des conteneurs
             echo "=== Vérification des conteneurs ==="
