@@ -35,7 +35,7 @@ export class NlpService {
     const tokens = this.tokenizer.tokenize(cleanText);
 
     // Appliquer le stemming
-    const stems = tokens.map((token) => this.stemmer.stem(token));
+    const stems = tokens ? tokens.map((token) => this.stemmer.stem(token)) : [];
 
     return stems;
   }
@@ -88,9 +88,9 @@ export class NlpService {
       ];
 
       // Extraire les mots clés (mots importants qui ne sont pas des mots vides)
-      const keywords = tokens.filter(
+      const keywords = tokens ? tokens.filter(
         (token) => token.length > 3 && !stopWords.includes(token.toLowerCase()),
-      );
+      ) : [];
 
       // Pour les questions de type "capitale de X", essayer d'extraire le nom du pays
       if (text.toLowerCase().includes('capitale')) {

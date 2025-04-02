@@ -1,58 +1,62 @@
 FROM node:20-alpine AS builder
 
-WORKDIR /app
-
 # Configuration de l'environnement
 ENV NODE_ENV=production
 
 # Installation des dépendances globales nécessaires
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ git
 
-# Installation globale de NestJS CLI
-RUN npm install -g @nestjs/cli
+# Définir un répertoire de travail
+WORKDIR /app
 
-# Copie des fichiers du projet backend
-WORKDIR /app/backend
-COPY ./apps/backend/package.json ./
-COPY ./apps/backend/tsconfig*.json ./
-COPY ./apps/backend/nest-cli.json ./
-COPY ./.npmrc /app/
+# Copier les fichiers de configuration du projet racine
+COPY package.json .
+COPY package-lock.json* .
+COPY .npmrc* .
 
-# Installation des dépendances du backend
-RUN npm install --prefer-offline --no-audit --legacy-peer-deps
+# Installer les dépendances racine (partiellement)
+RUN npm install --production=false --ignore-scripts
 
-# Copie du code source du backend
-COPY ./apps/backend/src ./src
+# Copier les fichiers de configuration spécifiques au backend
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/backend/tsconfig.json ./apps/backend/
+COPY apps/backend/tsconfig.build.json* ./apps/backend/
+COPY apps/backend/nest-cli.json ./apps/backend/
 
-# Build de l'application backend
-RUN nest build
+# Installer les dépendances du backend
+WORKDIR /app/apps/backend
+RUN npm install --production=false
+
+# Copier le code source du backend
+COPY apps/backend/src ./src
+
+# Construire l'application
+RUN npm run build
 
 # Image de production
-FROM node:20-alpine AS runner
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Configuration des variables d'environnement
 ENV NODE_ENV=production
 
-# Ajout d'un utilisateur non-root pour plus de sécurité
+# Ajouter un utilisateur non-root pour la sécurité
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 nestjs
 
-# Copie des fichiers nécessaires depuis le builder
-COPY --from=builder /app/backend/dist ./dist
-COPY --from=builder /app/backend/node_modules ./node_modules
-COPY --from=builder /app/backend/package.json ./package.json
-COPY --from=builder /app/.npmrc ./.npmrc
+# Copier les fichiers nécessaires depuis le builder
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/package.json ./
 
-# Changement de propriétaire pour les fichiers
-RUN chown -R nextjs:nodejs /app
+# Changer le propriétaire des fichiers
+RUN chown -R nestjs:nodejs /app
 
-# Passage à l'utilisateur non-root
-USER nextjs
+# Passer à l'utilisateur non-root
+USER nestjs
 
-# Exposition du port
+# Exposer le port
 EXPOSE 3001
 
-# Démarrage de l'application avec plus de stabilité
+# Commande de démarrage
 CMD ["node", "dist/main.js"]
