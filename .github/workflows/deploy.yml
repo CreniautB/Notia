@@ -142,6 +142,22 @@ jobs:
             docker system prune -f --volumes
             check_error "Échec du nettoyage des ressources Docker"
 
+            # Vérification de la structure des répertoires
+            echo "=== Vérification de la structure des répertoires ==="
+            ls -la
+            echo "=== Structure du répertoire apps ==="
+            ls -la ./apps
+            echo "=== Structure du répertoire apps/frontend ==="
+            ls -la ./apps/frontend
+            echo "=== Structure du répertoire apps/backend ==="
+            ls -la ./apps/backend
+            
+            # Vérification des fichiers critiques
+            echo "=== Vérification des fichiers package.json ==="
+            cat ./apps/frontend/package.json
+            echo "=== Vérification des fichiers backend package.json ==="
+            cat ./apps/backend/package.json
+            
             # Construction et démarrage des conteneurs
             echo "=== Construction et démarrage des conteneurs ==="
             # Construire le conteneur backend
@@ -168,7 +184,23 @@ jobs:
 
             # Attente pour que les services démarrent
             echo "Attente du démarrage des services..."
-            sleep 10
+            sleep 15
+
+            # Vérification des services sur leurs ports
+            echo "=== Vérification des services sur leurs ports ==="
+            if ! curl -s http://localhost:3000 >/dev/null; then
+              echo "❌ Erreur: Le frontend ne répond pas sur le port 3000"
+              docker-compose logs frontend
+            else
+              echo "✅ Frontend accessible sur le port 3000"
+            fi
+
+            if ! curl -s http://localhost:3001/api/health >/dev/null; then
+              echo "❌ Erreur: Le backend ne répond pas sur le port 3001"
+              docker-compose logs backend
+            else
+              echo "✅ Backend accessible sur le port 3001"
+            fi
 
             # Configuration de Nginx - APRÈS le démarrage des conteneurs
             echo "=== Configuration de Nginx ==="
