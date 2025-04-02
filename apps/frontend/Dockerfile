@@ -20,8 +20,8 @@ COPY tsconfig.json ./
 # Installation des dépendances
 RUN npm install --legacy-peer-deps
 
-# Forcer l'utilisation de Next.js 14.1.0
-RUN npm install next@14.1.0 --save-exact
+# Forcer l'utilisation de Next.js 14.0.0
+RUN npm install next@14.0.0 --save-exact --legacy-peer-deps
 
 # Copie du code source complet
 COPY . .

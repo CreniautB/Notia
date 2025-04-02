@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "@nestjs/jwt": "10.0.0",
-    "@nestjs/mongoose": "10.0.0",
-    "@nestjs/passport": "10.0.0",
+    "@nestjs/mongoose": "9.2.2",
+    "@nestjs/passport": "9.0.3",
     "@types/cookie-parser": "1.4.6",
     "@types/jsonwebtoken": "9.0.2",
     "@types/passport-local": "1.0.35",
