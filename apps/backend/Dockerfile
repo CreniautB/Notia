@@ -8,24 +8,24 @@ ENV NODE_ENV=production
 # Installation des dépendances globales nécessaires
 RUN apk add --no-cache python3 make g++
 
-# Copie des fichiers de configuration du monorepo
-COPY package.json ./
-COPY package-lock.json ./
-COPY nx.json ./
-COPY tsconfig*.json ./
-COPY .npmrc ./
+# Installation globale de NestJS CLI
+RUN npm install -g @nestjs/cli
 
-# Installation des dépendances à la racine
+# Copie des fichiers du projet backend
+WORKDIR /app/backend
+COPY ./apps/backend/package.json ./
+COPY ./apps/backend/tsconfig*.json ./
+COPY ./apps/backend/nest-cli.json ./
+COPY ./.npmrc /app/
+
+# Installation des dépendances du backend
 RUN npm install --prefer-offline --no-audit --legacy-peer-deps
 
-# Installation globale de Nx CLI
-RUN npm install -g nx@16.6.0
+# Copie du code source du backend
+COPY ./apps/backend/src ./src
 
-# Copie du code source complet
-COPY . .
-
-# Build de l'application avec optimisation
-RUN nx build backend --configuration=production --skip-nx-cache
+# Build de l'application backend
+RUN nest build
 
 # Image de production
 FROM node:20-alpine AS runner
@@ -40,13 +40,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copie des fichiers nécessaires depuis le builder
-COPY --from=builder /app/dist/apps/backend ./
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/node_modules ./node_modules
+COPY --from=builder /app/backend/package.json ./package.json
 COPY --from=builder /app/.npmrc ./.npmrc
-
-# Installation des dépendances de production uniquement
-RUN npm install --only=production --prefer-offline --no-audit --legacy-peer-deps
 
 # Changement de propriétaire pour les fichiers
 RUN chown -R nextjs:nodejs /app
@@ -58,4 +55,4 @@ USER nextjs
 EXPOSE 3001
 
 # Démarrage de l'application avec plus de stabilité
-CMD ["node", "main.js"]
+CMD ["node", "dist/main.js"]
