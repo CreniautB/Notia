@@ -8,7 +8,13 @@ WORKDIR /app
 
 # Copie des fichiers de configuration du projet racine
 COPY package.json package-lock.json* ./
+COPY tsconfig.base.json ./
+COPY tsconfig.json ./
+COPY nx.json ./
 COPY .npmrc* ./
+
+# Copie des bibliothèques partagées
+COPY libs /app/libs/
 
 # Installation des dépendances Nx nécessaires
 RUN npm install --no-package-lock @nx/next@16.6.0
@@ -22,6 +28,7 @@ RUN echo 'module.exports = {' > next.config.simple.js && \
     echo '  output: "standalone",' >> next.config.simple.js && \
     echo '  eslint: { ignoreDuringBuilds: true },' >> next.config.simple.js && \
     echo '  typescript: { ignoreBuildErrors: true },' >> next.config.simple.js && \
+    echo '  transpilePackages: ["three"],' >> next.config.simple.js && \
     echo '  images: { unoptimized: true }' >> next.config.simple.js && \
     echo '};' >> next.config.simple.js
 
@@ -51,8 +58,10 @@ ENV NEXT_PUBLIC_API_URL=http://backend:3001
 # Nettoyage du cache Next.js pour éviter les problèmes
 RUN npx rimraf ./.next ./node_modules/.cache
 
-# Debug - montrer le contenu du fichier de configuration
+# Debug - montrer le contenu du fichier de configuration et vérifier les fichiers importants
 RUN cat next.config.js
+RUN ls -la /app/tsconfig.base.json
+RUN ls -la /app/libs || echo "Répertoire libs non trouvé"
 
 # Build de l'application avec plus de mémoire
 RUN NODE_OPTIONS="--max_old_space_size=4096" npx next build
