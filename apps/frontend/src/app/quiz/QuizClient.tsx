@@ -5,8 +5,8 @@ import { QuizPlayerWrapper } from './QuizPlayerWrapper';
 import type { Quiz } from './types';
 import { DIFFICULTY_LABELS } from './utils';
 import { QuizDifficulty } from '@notia/shared/interfaces/QuizTypes';
-import { ContentCard } from '../../components/ContentCard';
-import { QuizIcon } from '../../components/QuizIcon';
+import { ContentCard } from '@/components/ContentCard';
+import { QuizIcon } from '@/components/QuizIcon';
 
 interface QuizClientProps {
   quiz: Quiz;

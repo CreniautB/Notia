@@ -70,7 +70,8 @@ RUN echo 'module.exports = {' > next.config.js && \
     echo '  webpack: (config, { isServer }) => {' >> next.config.js && \
     echo '    config.resolve.alias = {' >> next.config.js && \
     echo '      ...config.resolve.alias,' >> next.config.js && \
-    echo '      "@notia/shared": "/app/libs/shared/src"' >> next.config.js && \
+    echo '      "@notia/shared": "/app/libs/shared/src",' >> next.config.js && \
+    echo '      "@": "/app/frontend/src"' >> next.config.js && \
     echo '    };' >> next.config.js && \
     echo '    return config;' >> next.config.js && \
     echo '  }' >> next.config.js && \
