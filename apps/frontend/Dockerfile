@@ -75,13 +75,12 @@ RUN echo '/// <reference types="next" />' > next-env.d.ts && \
     echo '// NOTE: This file should not be edited' >> next-env.d.ts && \
     echo '// see https://nextjs.org/docs/basic-features/typescript for more information.' >> next-env.d.ts
 
-# Créer le répertoire src et public
+# Créer les répertoires nécessaires
 RUN mkdir -p ./src ./public
 
-# Copier le code source du frontend si disponible
-COPY apps/frontend/src/. ./src/ 2>/dev/null || true
-# La commande COPY ne supporte pas de redirection ou conditionnels directement
-# Nous allons simplement créer un répertoire public minimal pour le build
+# Copier le code source
+COPY apps/frontend/src ./src
+COPY apps/frontend/public ./public
 
 # Installation des dépendances
 RUN npm install --legacy-peer-deps
