@@ -52,7 +52,8 @@ RUN echo '{' > tsconfig.json && \
     echo '      }' >> tsconfig.json && \
     echo '    ],' >> tsconfig.json && \
     echo '    "paths": {' >> tsconfig.json && \
-    echo '      "@/*": ["./src/*"]' >> tsconfig.json && \
+    echo '      "@/*": ["./src/*"],' >> tsconfig.json && \
+    echo '      "@notia/shared/*": ["../libs/shared/src/*"]' >> tsconfig.json && \
     echo '    }' >> tsconfig.json && \
     echo '  },' >> tsconfig.json && \
     echo '  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],' >> tsconfig.json && \
@@ -65,7 +66,14 @@ RUN echo 'module.exports = {' > next.config.js && \
     echo '  eslint: { ignoreDuringBuilds: true },' >> next.config.js && \
     echo '  typescript: { ignoreBuildErrors: true },' >> next.config.js && \
     echo '  transpilePackages: ["three"],' >> next.config.js && \
-    echo '  images: { unoptimized: true }' >> next.config.js && \
+    echo '  images: { unoptimized: true },' >> next.config.js && \
+    echo '  webpack: (config, { isServer }) => {' >> next.config.js && \
+    echo '    config.resolve.alias = {' >> next.config.js && \
+    echo '      ...config.resolve.alias,' >> next.config.js && \
+    echo '      "@notia/shared": "/app/libs/shared/src"' >> next.config.js && \
+    echo '    };' >> next.config.js && \
+    echo '    return config;' >> next.config.js && \
+    echo '  }' >> next.config.js && \
     echo '};' >> next.config.js
 
 # Créer le fichier next-env.d.ts
@@ -76,11 +84,12 @@ RUN echo '/// <reference types="next" />' > next-env.d.ts && \
     echo '// see https://nextjs.org/docs/basic-features/typescript for more information.' >> next-env.d.ts
 
 # Créer les répertoires nécessaires
-RUN mkdir -p ./src ./public
+RUN mkdir -p ./src ./public ../libs/shared/src
 
 # Copier le code source
 COPY apps/frontend/src ./src
 COPY apps/frontend/public ./public
+COPY libs/shared/src ../libs/shared/src
 
 # Installation des dépendances
 RUN npm install --legacy-peer-deps
